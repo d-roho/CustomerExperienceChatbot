@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict, Any
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
@@ -25,8 +25,7 @@ class VectorStore:
 
         # Initialize Pinecone
         try:
-            pinecone.init(api_key=api_key, environment=environment)
-            self.pc = pinecone
+            self.pc = Pinecone(api_key=api_key)
             print(f"Pinecone initialized. Available indexes: {self.pc.list_indexes().names()}")
 
             if self.index_name not in self.pc.list_indexes().names():
