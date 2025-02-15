@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict, Any
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
@@ -25,22 +25,24 @@ class VectorStore:
 
         # Initialize Pinecone
         try:
-            pinecone.init(api_key=api_key, environment=environment)
-            print(f"Pinecone initialized. Available indexes: {pinecone.list_indexes()}")
+            self.pc = Pinecone(api_key=api_key)
+            print(f"Pinecone initialized. Available indexes: {self.pc.list_indexes().names()}")
 
-            if self.index_name not in pinecone.list_indexes():
+            if self.index_name not in self.pc.list_indexes().names():
                 print(f"Creating new index: {self.index_name}")
                 try:
-                    pinecone.create_index(
+                    self.pc.create_index(
                         name=self.index_name,
                         dimension=self.dimension,
-                        metric='cosine'
-                    )
+                        metric='cosine',
+                        spec=ServerlessSpec(
+                            cloud='aws',
+                            region=self.environment))
                     print(f"Successfully created index: {self.index_name}")
                 except Exception as e:
                     raise RuntimeError(f"Failed to create Pinecone index: {str(e)}")
 
-            self.index = pinecone.Index(self.index_name)
+            self.index = self.pc.Index(self.index_name)
             print(f"Successfully connected to index: {self.index_name}")
 
         except Exception as e:
@@ -60,7 +62,7 @@ class VectorStore:
             embeddings = client.get_embeddings(texts)
             print(f"Successfully generated {len(embeddings)} embeddings")
 
-            # Store texts in Replit DB
+            # Store texts in Replit DB with metadata
             print("\nStoring texts in Replit DB...")
             for chunk in chunks:
                 chunk_id = chunk['metadata']['id']
