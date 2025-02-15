@@ -8,9 +8,19 @@ from utils.llm import LLMHandler
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
     st.session_state.processed_chunks = []
+if 'last_query' not in st.session_state:
+    st.session_state.last_query = None
 
 # Page configuration
 st.set_page_config(page_title="RAG Pipeline for Reviews", layout="wide")
+
+# Model selection in sidebar
+st.sidebar.title("Model Settings")
+model = st.sidebar.selectbox(
+    "Select Model",
+    ["claude-3-haiku-20240307", "claude-3-sonnet-20240229"],
+    index=0  # Default to Haiku
+)
 
 
 # Initialize components
@@ -56,14 +66,22 @@ st.sidebar.title("Parameters")
 chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
 top_k = st.sidebar.slider("Number of Results", 1, 10, 5)
-use_reranking = st.sidebar.checkbox("Use Reranking", True)
+use_reranking = st.sidebar.checkbox("Use Reranking", False)
 
 # Main interface
 st.title("Review Analysis Pipeline")
 
 # Input selection method
 input_method = st.radio("Select Input Method",
-                        ["File Upload", "Existing Vector Store"])
+                        ["Existing Vector Store", "File Upload"],
+                        index=0)  # Default to Existing Vector Store
+
+if input_method == "Existing Vector Store":
+    available_indexes = vector_store.pc.list_indexes().names()
+    if available_indexes:
+        selected_index = st.selectbox("Select Vector Store", 
+                                    available_indexes,
+                                    index=available_indexes.index('reviews-index') if 'reviews-index' in available_indexes else 0)
 
 if input_method == "File Upload":
     # File upload
@@ -102,7 +120,9 @@ elif input_method == "Existing Vector Store":
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
-if query:
+search_button = st.button("Search")
+if query and search_button and (query != st.session_state.last_query or search_button):
+    st.session_state.last_query = query
     with st.spinner("Searching..."):
         try:
             # Search for relevant chunks
