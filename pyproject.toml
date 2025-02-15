@@ -8,5 +8,6 @@ dependencies = [
     "nltk>=3.9.1",
     "openai>=1.63.0",
     "pinecone-client>=5.0.1",
+    "replit>=4.1.0",
     "streamlit>=1.42.0",
 ]
