@@ -48,11 +48,13 @@ class VectorStore:
         """Get embeddings for texts using Claude."""
         embeddings = []
         for text in texts:
-            response = client.embeddings.create(
+            response = client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                input=text
+                max_tokens=1,
+                system="Respond with 'ok' - we only need the embedding.",
+                messages=[{"role": "user", "content": text}]
             )
-            embeddings.append(response.embeddings[0])
+            embeddings.append(response.usage.input_tokens)
         return embeddings
 
     def upsert_texts(self, texts: List[str], client: Anthropic) -> None:
