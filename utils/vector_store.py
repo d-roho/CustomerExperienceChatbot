@@ -1,7 +1,6 @@
 import re
 from typing import List, Dict, Any
-from pinecone import Pinecone
-from pinecone.core.client.configuration import ServerlessSpec
+from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
