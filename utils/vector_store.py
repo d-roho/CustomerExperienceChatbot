@@ -53,14 +53,20 @@ class VectorStore:
             embeddings = client.get_embeddings(texts)
             print(f"Successfully generated {len(embeddings)} embeddings")
 
-            # Store texts in Replit DB with metadata
-            print("\nStoring texts in Replit DB...")
-            for chunk in chunks:
-                chunk_id = chunk['metadata']['id']
-                db[f"text_{chunk_id}"] = {
-                    'text': chunk['text'],
-                    'metadata': chunk['metadata']
-                }
+            # Store texts in Replit DB with metadata in batches
+            print("\nStoring texts in Replit DB in batches...")
+            batch_size = 50
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i + batch_size]
+                batch_data = {}
+                for chunk in batch:
+                    chunk_id = chunk['metadata']['id']
+                    batch_data[f"text_{chunk_id}"] = {
+                        'text': chunk['text'],
+                        'metadata': chunk['metadata']
+                    }
+                db.update(batch_data)
+                print(f"Stored batch {i//batch_size + 1}/{(len(chunks) + batch_size - 1)//batch_size}")
 
             # Prepare vectors with metadata
             print("\nPreparing vectors for Pinecone upload...")
