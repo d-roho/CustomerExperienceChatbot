@@ -12,6 +12,8 @@ if 'processed_chunks' not in st.session_state:
     st.session_state.processed_chunks = []
 if 'last_query' not in st.session_state:
     st.session_state.last_query = None
+if 'cache' not in st.session_state:
+    st.session_state.cache = {}
 
 # Page configuration
 st.set_page_config(page_title="RAG Pipeline for Reviews", layout="wide")
@@ -44,8 +46,8 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
 
         try:
             vector_store = VectorStore(api_key=api_key,
-                                       environment=environment,
-                                       index_name='reviews-index')
+                                     environment=environment,
+                                     index_name='reviews-index')
             return llm_handler, vector_store
         except Exception as e:
             st.error(f"Failed to initialize Pinecone: {str(e)}")
@@ -54,7 +56,6 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
     except Exception as e:
         st.error(f"Failed to initialize components: {str(e)}")
         st.stop()
-
 
 # Initialize components with error handling
 try:
@@ -75,13 +76,13 @@ st.title("Review Analysis Pipeline")
 
 # Input selection method
 input_method = st.radio("Select Input Method",
-                        ["Existing Vector Store", "File Upload"],
-                        index=0)  # Default to Existing Vector Store
+                       ["Existing Vector Store", "File Upload"],
+                       index=0)  # Default to Existing Vector Store
 
 if input_method == "File Upload":
     # File upload
     uploaded_file = st.file_uploader("Upload Reviews File",
-                                     type=['txt', 'csv'])
+                                    type=['txt', 'csv'])
     index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
 
     if uploaded_file:
@@ -96,7 +97,7 @@ if input_method == "File Upload":
                         dimension=vector_store.dimension,
                         metric='cosine',
                         spec=ServerlessSpec(cloud='aws',
-                                            region=vector_store.environment))
+                                          region=vector_store.environment))
                     st.success(f"Created new index: {index_name}")
                 vector_store.index = vector_store.pc.Index(index_name)
                 vector_store.index_name = index_name
@@ -109,7 +110,7 @@ if input_method == "File Upload":
             try:
                 # Initialize text processor
                 text_processor = TextProcessor(chunk_size=chunk_size,
-                                               chunk_overlap=chunk_overlap)
+                                            chunk_overlap=chunk_overlap)
 
                 # Process file based on type
                 content = uploaded_file.read()
@@ -122,10 +123,9 @@ if input_method == "File Upload":
                     preview_df = pd.DataFrame([
                         {
                             'text': chunk['text'],
-                            'city': chunk['metadata'].get(
-                                'city', 'QC'),  #Quebec missing in dataset
-                            'rating': chunk['metadata'].get('rating', ''),
-                            'date': chunk['metadata'].get('date', '')
+                            'city': chunk['metadata'].get('city', 'N/A'),
+                            'rating': chunk['metadata'].get('rating', 'N/A'),
+                            'date': chunk['metadata'].get('date', 'N/A')
                         } for chunk in chunks[:5]
                     ])
                     st.dataframe(preview_df)
@@ -163,16 +163,6 @@ elif input_method == "Existing Vector Store":
     else:
         st.warning("No existing vector stores found")
 
-# Initialize session state for results
-if 'results' not in st.session_state:
-    st.session_state.results = None
-if 'response' not in st.session_state:
-    st.session_state.response = None
-
-# Initialize cache in session state
-if 'cache' not in st.session_state:
-    st.session_state.cache = {}
-
 # Query interface
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
@@ -192,41 +182,36 @@ Text: {result['text']}"""
     return "\n" + "-"*80 + "\n\n".join(reviews_text)
 
 if search_button and query:
-    cache_key = f"{query}_{top_k}_{use_reranking}_{model}"
-    
-    if cache_key not in st.session_state.cache:
-        with st.spinner("Searching..."):
-            try:
-                # Search for relevant chunks
-                results = vector_store.search(query, llm_handler, top_k=top_k)
+    with st.spinner("Searching..."):
+        try:
+            # Search for relevant chunks
+            results = vector_store.search(query, llm_handler, top_k=top_k)
 
-                # Rerank if enabled
-                if use_reranking and results:
-                    results = vector_store.rerank_results(query, results)
+            # Rerank if enabled
+            if use_reranking and results:
+                results = vector_store.rerank_results(query, results)
 
-                # Generate response
-                if results:
-                    response = llm_handler.generate_response(query, results, model)
-                    st.session_state.cache[cache_key] = {
-                        'response': response,
-                        'results': results
-                    }
-                else:
-                    st.warning("No relevant results found")
-                    return
+            # Generate response
+            if results:
+                response = llm_handler.generate_response(query, results, model)
 
-            except Exception as e:
-                st.error(f"Search failed: {str(e)}")
-                return
-    
-    # Display cached results if available
-    if cache_key in st.session_state.cache:
-        cached_data = st.session_state.cache[cache_key]
-        st.subheader("Generated Response")
-        st.code(cached_data['response'], language="text")
+                st.subheader("Generated Response")
+                st.write(response)
 
-        st.subheader("Relevant Reviews")
-        st.code(format_results(cached_data['results']), language="text")
+                st.subheader("Relevant Reviews")
+                for i, result in enumerate(results, 1):
+                    with st.expander(f"Review {i} (Score: {result['score']:.4f})"):
+                        metadata = result.get('metadata', {})
+                        st.write(f"Location: {metadata.get('location', 'N/A')}")
+                        st.write(f"City: {metadata.get('city', 'N/A')}")
+                        st.write(f"Rating: {metadata.get('rating', 'N/A')}")
+                        st.write(f"Date: {metadata.get('date', 'N/A')}")
+                        st.write("Text:", result['text'])
+            else:
+                st.warning("No relevant results found")
+
+        except Exception as e:
+            st.error(f"Search failed: {str(e)}")
 
 # Footer
 st.markdown("---")
