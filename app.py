@@ -62,10 +62,14 @@ use_reranking = st.sidebar.checkbox("Use Reranking", True)
 # Main interface
 st.title("Review Analysis Pipeline")
 
-# File upload
-uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
+# Input selection method
+input_method = st.radio("Select Input Method", ["File Upload", "Existing Vector Store"])
 
-if uploaded_file:
+if input_method == "File Upload":
+    # File upload
+    uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
+    
+    if uploaded_file:
     with st.spinner("Processing file..."):
         # Read and process the file
         text_processor = TextProcessor(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -79,6 +83,19 @@ if uploaded_file:
             st.success(f"Processed {len(chunks)} chunks from the file")
         except Exception as e:
             st.error(f"Failed to store chunks in vector database: {str(e)}")
+
+elif input_method == "Existing Vector Store":
+    # Get available indexes
+    available_indexes = vector_store.pc.list_indexes().names()
+    
+    if available_indexes:
+        selected_index = st.selectbox("Select Vector Store", available_indexes)
+        if selected_index != vector_store.index_name:
+            vector_store.index = vector_store.pc.Index(selected_index)
+            vector_store.index_name = selected_index
+            st.success(f"Connected to index: {selected_index}")
+    else:
+        st.warning("No existing vector stores found")
 
 # Query interface
 st.header("Query the Reviews")
