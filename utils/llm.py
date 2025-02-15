@@ -1,9 +1,9 @@
-
 import os
 import sys
 from anthropic import Anthropic
 from openai import OpenAI
 from typing import List, Dict, Any
+
 
 class LLMHandler:
 
@@ -21,27 +21,28 @@ class LLMHandler:
         self.openai = OpenAI(api_key=self.openai_key)
         self.model = "claude-3-5-sonnet-20241022"
 
-    def generate_response(self, query: str, context: List[Dict[str, Any]]) -> str:
+    def generate_response(self, query: str, context: List[Dict[str,
+                                                               Any]]) -> str:
         """Generate a response using Claude."""
         context_text = "\n".join([f"- {c['text']}" for c in context])
 
         try:
             response = self.anthropic.messages.create(
                 model=self.model,
+                max_tokens=2000,
+                temperature=0,
                 messages=[{
-                    "role": "user",
-                    "content": f"""Context information is below.
-                        ---------------------
-                        {context_text}
-                        ---------------------
-                        Given the context information, answer the following question: {query}
-                        Answer:"""
-                }],
-                max_tokens=1000,
-                temperature=0.0)
-
+                    "role":
+                    "system",
+                    "content":
+                    "You are a knowledgeable assistant. Use the provided context to answer questions accurately."
+                }, {
+                    "role":
+                    "user",
+                    "content":
+                    f"Context:\n{context_text}\n\nQuestion: {query}"
+                }])
             return response.content[0].text
-
         except Exception as e:
             raise RuntimeError(f"Failed to generate response: {str(e)}")
 
@@ -49,9 +50,7 @@ class LLMHandler:
         """Get embeddings using OpenAI's ada-002."""
         try:
             response = self.openai.embeddings.create(
-                model="text-embedding-ada-002",
-                input=texts
-            )
+                model="text-embedding-ada-002", input=texts)
             return [embedding.embedding for embedding in response.data]
         except Exception as e:
             raise RuntimeError(f"Failed to generate embeddings: {str(e)}")
