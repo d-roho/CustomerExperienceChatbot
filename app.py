@@ -26,35 +26,31 @@ model = st.sidebar.selectbox(
 
 
 # Initialize components
-@st.cache_resource
+@st.cache_resource(ttl=3600)  # Cache for 1 hour
 def init_components() -> Tuple[LLMHandler, VectorStore]:
     """Initialize LLM and Vector Store components with error handling."""
     try:
         llm_handler = LLMHandler()
 
         # Get environment variables with proper error handling
-        api_key: Optional[str] = os.environ.get('PINECONE_API_KEY')
-        environment: Optional[str] = os.environ.get('PINECONE_ENVIRONMENT')
+        api_key = os.environ.get('PINECONE_API_KEY')
+        environment = os.environ.get('PINECONE_ENVIRONMENT')
 
         if not api_key or not environment:
-            st.error(
+            raise ValueError(
                 "Missing required Pinecone credentials. Please check your environment variables."
             )
-            st.stop()
 
-        try:
-            vector_store = VectorStore(api_key=api_key,
-                                       environment=environment,
-                                       index_name='reviews-index')
-            return llm_handler, vector_store
-        except Exception as e:
-            st.error(f"Failed to initialize Pinecone: {str(e)}")
-            st.stop()
+        vector_store = VectorStore(
+            api_key=api_key,
+            environment=environment,
+            index_name='reviews-index'
+        )
+        return llm_handler, vector_store
 
     except Exception as e:
         st.error(f"Failed to initialize components: {str(e)}")
-        st.stop()
-
+        raise  # Re-raise to ensure proper error handling
 
 # Initialize components with error handling
 try:
@@ -96,7 +92,7 @@ if input_method == "File Upload":
                         dimension=vector_store.dimension,
                         metric='cosine',
                         spec=ServerlessSpec(cloud='aws',
-                                            region=vector_store.environment))
+                                             region=vector_store.environment))
                     st.success(f"Created new index: {index_name}")
                 vector_store.index = vector_store.pc.Index(index_name)
                 vector_store.index_name = index_name
@@ -172,28 +168,33 @@ if 'response' not in st.session_state:
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
+# Search function with improved caching
+@st.cache_data(ttl=300, show_spinner=False)  # Cache for 5 minutes
+def search_chunks(query: str, top_k: int, use_reranking: bool, vector_store: VectorStore, llm_handler: LLMHandler):
+    """Search for relevant chunks with caching."""
+    results = vector_store.search(query, llm_handler, top_k=top_k)
+    if use_reranking and results:
+        results = vector_store.rerank_results(query, results)
+    return results
+
+# Response generation with improved caching
+@st.cache_data(ttl=300, show_spinner=False)  # Cache for 5 minutes
+def generate_cached_response(query: str, results: List[Dict[str, Any]], model: str, llm_handler: LLMHandler):
+    """Generate response with caching."""
+    return llm_handler.generate_response(query, results, model)
+
+
 if query:
     if st.button("Search"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
-                # Search for relevant chunks
-                @st.cache_data(show_spinner=False)
-                def search_chunks(_query, _top_k, _use_reranking):
-                    results = vector_store.search(_query, llm_handler, top_k=_top_k)
-                    if _use_reranking and results:
-                        results = vector_store.rerank_results(_query, results)
-                    return results
-
-                results = search_chunks(query, top_k, use_reranking)
-
-                # Generate response
-                @st.cache_data(show_spinner=False)
-                def generate_cached_response(_query, _results, _model):
-                    return llm_handler.generate_response(_query, _results, _model)
+                # Search for relevant chunks with proper argument passing
+                results = search_chunks(query, top_k, use_reranking, vector_store, llm_handler)
 
                 if results:
-                    response = generate_cached_response(query, results, model)
+                    # Generate response with proper argument passing
+                    response = generate_cached_response(query, results, model, llm_handler)
 
                     # Display results
                     st.subheader("Generated Response")
