@@ -82,7 +82,7 @@ if input_method == "File Upload":
     # File upload
     uploaded_file = st.file_uploader("Upload Reviews File",
                                      type=['txt', 'csv'])
-    index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
+    index_name = st.text_input("Enter Pinecone Index Name", "reviews-csv-test")
 
     if uploaded_file:
         file_type = uploaded_file.name.split('.')[-1].lower()
@@ -150,10 +150,9 @@ elif input_method == "Existing Vector Store":
     available_indexes = vector_store.pc.list_indexes().names()
 
     if available_indexes:
-        selected_index = st.selectbox(
-            "Select Vector Store",
-            available_indexes,
-            index=0)
+        selected_index = st.selectbox("Select Vector Store",
+                                      available_indexes,
+                                      index=0)
 
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
@@ -186,7 +185,8 @@ if query:
 
                 # Generate response
                 if results:
-                    response = llm_handler.generate_response(query, results, model)
+                    response = llm_handler.generate_response(
+                        query, results, model)
 
                     # Display results
                     st.subheader("Generated Response")
