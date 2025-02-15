@@ -119,16 +119,15 @@ if input_method == "File Upload":
                 # Display preview
                 if file_type == 'csv':
                     st.subheader("Preview of processed reviews")
-                    preview_df = pd.DataFrame([{
-                        'text':
-                        chunk['text'],
-                        'city':
-                        chunk['metadata'].get('city', ''),
-                        'rating':
-                        chunk['metadata'].get('rating', ''),
-                        'date':
-                        chunk['metadata'].get('date', '')
-                    } for chunk in chunks[:5]])
+                    preview_df = pd.DataFrame([
+                        {
+                            'text': chunk['text'],
+                            'city': chunk['metadata'].get(
+                                'city', 'QC'),  #Quebec missing in dataset
+                            'rating': chunk['metadata'].get('rating', ''),
+                            'date': chunk['metadata'].get('date', '')
+                        } for chunk in chunks[:5]
+                    ])
                     st.dataframe(preview_df)
                 else:
                     st.subheader("Preview of text chunks")
