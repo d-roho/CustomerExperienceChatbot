@@ -162,9 +162,14 @@ if st.session_state.results and st.session_state.response:
     # Add copy all button
     if st.button("📋 Copy All Reviews"):
         st.write("All reviews copied!")
-        st.javascript(f"""
-            navigator.clipboard.writeText({repr(all_reviews_text)});
-        """)
+        st.components.v1.html(
+            f"""
+            <script>
+                navigator.clipboard.writeText({repr(all_reviews_text)});
+            </script>
+            """,
+            height=0
+        )
 
     # Display individual passages
     for i, result in enumerate(st.session_state.results, 1):
@@ -175,9 +180,14 @@ if st.session_state.results and st.session_state.response:
             with col2:
                 if st.button("📋", key=f"copy_{i}"):
                     st.write("Copied!")
-                    st.javascript(f"""
-                        navigator.clipboard.writeText("{result['text']}");
-                    """)
+                    st.components.v1.html(
+                        f"""
+                        <script>
+                            navigator.clipboard.writeText("{result['text']}");
+                        </script>
+                        """,
+                        height=0
+                    )
 
 # Footer
 st.markdown("---")
