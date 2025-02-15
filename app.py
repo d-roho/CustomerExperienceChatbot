@@ -159,12 +159,17 @@ if st.session_state.results and st.session_state.response:
     for i, result in enumerate(st.session_state.results, 1):
         all_reviews_text += f"## Passage {i} (Score: {result['score']:.4f})\n{result['text']}\n\n"
 
-    import pyperclip
-
     # Add copy all button
     if st.button("📋 Copy All Reviews"):
-        pyperclip.copy(all_reviews_text)
         st.write("All reviews copied!")
+        st.components.v1.html(
+            f"""
+            <script>
+                navigator.clipboard.writeText({repr(all_reviews_text)});
+            </script>
+            """,
+            height=0
+        )
 
     # Display individual passages
     for i, result in enumerate(st.session_state.results, 1):
@@ -174,8 +179,15 @@ if st.session_state.results and st.session_state.response:
                 st.write(result['text'])
             with col2:
                 if st.button("📋", key=f"copy_{i}"):
-                    pyperclip.copy(result['text'])
                     st.write("Copied!")
+                    st.components.v1.html(
+                        f"""
+                        <script>
+                            navigator.clipboard.writeText("{result['text']}");
+                        </script>
+                        """,
+                        height=0
+                    )
 
 # Footer
 st.markdown("---")
