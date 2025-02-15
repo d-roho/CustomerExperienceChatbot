@@ -18,7 +18,7 @@ st.set_page_config(page_title="RAG Pipeline for Reviews", layout="wide")
 st.sidebar.title("Model Settings")
 model = st.sidebar.selectbox(
     "Select Model",
-    ["claude-3-haiku-20240307", "claude-3-sonnet-20240229"],
+    ["claude-3-5-haiku-20241022", "claude-3-5-sonnet-20241022"],
     index=0  # Default to Haiku
 )
 
@@ -76,13 +76,6 @@ input_method = st.radio("Select Input Method",
                         ["Existing Vector Store", "File Upload"],
                         index=0)  # Default to Existing Vector Store
 
-if input_method == "Existing Vector Store":
-    available_indexes = vector_store.pc.list_indexes().names()
-    if available_indexes:
-        selected_index = st.selectbox("Select Vector Store", 
-                                    available_indexes,
-                                    index=available_indexes.index('reviews-index') if 'reviews-index' in available_indexes else 0)
-
 if input_method == "File Upload":
     # File upload
     uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
@@ -108,7 +101,11 @@ elif input_method == "Existing Vector Store":
     available_indexes = vector_store.pc.list_indexes().names()
 
     if available_indexes:
-        selected_index = st.selectbox("Select Vector Store", available_indexes)
+        selected_index = st.selectbox(
+            "Select Vector Store",
+            available_indexes,
+            index=available_indexes.index('reviews-index')
+            if 'reviews-index' in available_indexes else 0)
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
             vector_store.index_name = selected_index
@@ -121,7 +118,8 @@ st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
 search_button = st.button("Search")
-if query and search_button and (query != st.session_state.last_query or search_button):
+if query and search_button and (query != st.session_state.last_query
+                                or search_button):
     st.session_state.last_query = query
     with st.spinner("Searching..."):
         try:
