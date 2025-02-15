@@ -26,7 +26,7 @@ class VectorStore:
         # Initialize Pinecone
         try:
             pinecone.init(api_key=api_key, environment=environment)
-        self.pc = pinecone
+            self.pc = pinecone
             print(f"Pinecone initialized. Available indexes: {self.pc.list_indexes().names()}")
 
             if self.index_name not in self.pc.list_indexes().names():
