@@ -176,7 +176,7 @@ if st.session_state.results and st.session_state.response:
                     """)
 
         except Exception as e:
-            st.error(f"Search failed: {str(e)}")
+                st.error(f"Search failed: {str(e)}")
 
 # Footer
 st.markdown("---")
