@@ -79,8 +79,25 @@ input_method = st.radio("Select Input Method",
 if input_method == "File Upload":
     # File upload
     uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
+    index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
 
     if uploaded_file:
+        # Update vector store with new index
+        vector_store.index_name = index_name
+        if index_name not in vector_store.pc.list_indexes().names():
+            try:
+                vector_store.pc.create_index(
+                    name=index_name,
+                    dimension=vector_store.dimension,
+                    metric='cosine',
+                    spec=ServerlessSpec(
+                        cloud='aws',
+                        region=vector_store.environment))
+                st.success(f"Created new index: {index_name}")
+            except Exception as e:
+                st.error(f"Failed to create index: {str(e)}")
+                st.stop()
+        vector_store.index = vector_store.pc.Index(index_name)
         with st.spinner("Processing file..."):
             # Read and process the file
             text_processor = TextProcessor(chunk_size=chunk_size,
