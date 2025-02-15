@@ -1,6 +1,21 @@
 
 from replit import db
 
+def delete_all_keys():
+    print("Deleting all keys from Replit DB...")
+    print("-" * 50)
+    
+    if not db.keys():
+        print("Database is already empty")
+        return
+        
+    for key in db.keys():
+        del db[key]
+        print(f"Deleted key: {key}")
+    
+    print("-" * 50)
+    print("All keys have been deleted")
+
 def display_db_contents():
     print("Replit DB Contents:")
     print("-" * 50)
@@ -15,4 +30,4 @@ def display_db_contents():
         print("-" * 50)
 
 if __name__ == "__main__":
-    display_db_contents()
+    delete_all_keys()
