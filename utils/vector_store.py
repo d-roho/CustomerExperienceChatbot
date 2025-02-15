@@ -51,8 +51,16 @@ class VectorStore:
             response = client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=1,
-                system="Respond with 'ok' - we only need the embedding.",
-                messages=[{"role": "user", "content": text}]
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Respond with 'ok' - we only need the embedding."
+                    },
+                    {
+                        "role": "user",
+                        "content": text
+                    }
+                ]
             )
             embeddings.append(response.usage.input_tokens)
         return embeddings
