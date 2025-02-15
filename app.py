@@ -155,8 +155,8 @@ if st.session_state.results and st.session_state.response:
     st.subheader("Relevant Passages")
 
     # Display reviews in markdown
-    st.markdown("# Retrieved Reviews\n")
-    
+    st.code("Retrieved Reviews\n")
+
     # Display individual passages
     for i, result in enumerate(st.session_state.results, 1):
         st.markdown(f"## Passage {i} (Score: {result['score']:.4f})")
