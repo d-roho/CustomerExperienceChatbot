@@ -178,22 +178,15 @@ if query:
         with st.spinner("Searching..."):
             try:
                 # Search for relevant chunks
-                @st.cache_data(show_spinner=False)
-                def search_chunks(_query, _top_k, _use_reranking):
-                    results = vector_store.search(_query, llm_handler, top_k=_top_k)
-                    if _use_reranking and results:
-                        results = vector_store.rerank_results(_query, results)
-                    return results
+                results = vector_store.search(query, llm_handler, top_k=top_k)
 
-                results = search_chunks(query, top_k, use_reranking)
+                # Rerank if enabled
+                if use_reranking and results:
+                    results = vector_store.rerank_results(query, results)
 
                 # Generate response
-                @st.cache_data(show_spinner=False)
-                def generate_cached_response(_query, _results, _model):
-                    return llm_handler.generate_response(_query, _results, _model)
-
                 if results:
-                    response = generate_cached_response(query, results, model)
+                    response = llm_handler.generate_response(query, results, model)
 
                     # Display results
                     st.subheader("Generated Response")
