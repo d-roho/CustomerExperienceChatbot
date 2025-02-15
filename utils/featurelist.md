@@ -1,4 +1,3 @@
-Reranking
-Model selection
+Migrate to Motherduck
 MCP
 Summarization

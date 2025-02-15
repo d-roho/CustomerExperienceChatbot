@@ -4,7 +4,9 @@ import re
 import pandas as pd
 import uuid
 
+
 class TextProcessor:
+
     def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -46,17 +48,23 @@ class TextProcessor:
 
                 # Create metadata dictionary
                 metadata = {
-                    'id': str(uuid.uuid4()),
-                    'city': str(row.get('string_City', '')) if pd.notna(row.get('string_City')) else '',
-                    'rating': float(row.get('score_Overall Rating', 0)) if pd.notna(row.get('score_Overall Rating')) else 0.0,
-                    'date': str(row.get('date_Date Created', '')) if pd.notna(row.get('date_Date Created')) else '',
-                    'location': str(row.get('string_Place Location', '')) if pd.notna(row.get('string_Place Location')) else ''
+                    'id':
+                    str(uuid.uuid4()),
+                    'city':
+                    str(row.get('string_City', '')) if pd.notna(
+                        row.get('string_City')) else '',
+                    'rating':
+                    float(row.get('score_Overall Rating', 0)) if pd.notna(
+                        row.get('score_Overall Rating')) else 0.0,
+                    'date':
+                    str(row.get('date_Date Created', '')) if pd.notna(
+                        row.get('date_Date Created')) else '',
+                    'location':
+                    str(row.get('string_Place Location', 'QC')) if pd.notna(
+                        row.get('string_Place Location')) else 'QC'
                 }
 
-                chunks.append({
-                    'text': text,
-                    'metadata': metadata
-                })
+                chunks.append({'text': text, 'metadata': metadata})
 
             return chunks
 
@@ -106,7 +114,8 @@ class TextProcessor:
 
         return chunks
 
-    def process_file(self, file_content: bytes, file_type: str) -> List[Dict[str, Any]]:
+    def process_file(self, file_content: bytes,
+                     file_type: str) -> List[Dict[str, Any]]:
         """Process an uploaded file based on its type."""
         if file_type == 'csv':
             return self.process_csv_file(file_content)
