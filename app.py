@@ -144,7 +144,15 @@ if query and search_button and (query != st.session_state.last_query
             for i, result in enumerate(results, 1):
                 with st.expander(
                         f"Passage {i} (Score: {result['score']:.4f})"):
-                    st.write(result['text'])
+                    col1, col2 = st.columns([0.9, 0.1])
+                    with col1:
+                        st.write(result['text'])
+                    with col2:
+                        if st.button("📋", key=f"copy_{i}"):
+                            st.write("Copied!")
+                            st.javascript(f"""
+                                navigator.clipboard.writeText("{result['text']}");
+                            """)
 
         except Exception as e:
             st.error(f"Search failed: {str(e)}")
