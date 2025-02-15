@@ -169,46 +169,63 @@ if 'results' not in st.session_state:
 if 'response' not in st.session_state:
     st.session_state.response = None
 
+# Initialize cache in session state
+if 'cache' not in st.session_state:
+    st.session_state.cache = {}
+
 # Query interface
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
+search_button = st.button("Search")
 
-if query and query != st.session_state.last_query:
-    st.session_state.last_query = query
-    with st.spinner("Searching..."):
-        try:
-            # Search for relevant chunks
-            results = vector_store.search(query, llm_handler, top_k=top_k)
-
-            # Rerank if enabled
-            if use_reranking and results:
-                results = vector_store.rerank_results(query, results)
-
-            # Generate response
-            if results:
-                response = llm_handler.generate_response(query, results, model)
-
-                # Display results
-                st.subheader("Generated Response")
-                st.code(response, language="text")
-
-                st.subheader("Relevant Reviews")
-                for i, result in enumerate(results, 1):
-                    with st.expander(
-                            f"Review {i} (Score: {result['score']:.4f})"):
-                        metadata = result.get('metadata', {})
-                        if metadata:
-                            metadata_text = f"""Location: {metadata.get('location', 'N/A')}
+def format_results(results):
+    reviews_text = []
+    for i, result in enumerate(results, 1):
+        metadata = result.get('metadata', {})
+        review_text = f"""Review {i} (Score: {result['score']:.4f})
+Location: {metadata.get('location', 'N/A')}
 City: {metadata.get('city', 'N/A')}
 Rating: {metadata.get('rating', 'N/A')}
-Date: {metadata.get('date', 'N/A')}"""
-                            st.code(metadata_text, language="text")
-                        st.code(f"Text: {result['text']}", language="text")
-            else:
-                st.warning("No relevant results found")
+Date: {metadata.get('date', 'N/A')}
+Text: {result['text']}"""
+        reviews_text.append(review_text)
+    return "\n" + "-"*80 + "\n\n".join(reviews_text)
 
-        except Exception as e:
-            st.error(f"Search failed: {str(e)}")
+if search_button and query:
+    cache_key = f"{query}_{top_k}_{use_reranking}_{model}"
+    
+    if cache_key not in st.session_state.cache:
+        with st.spinner("Searching..."):
+            try:
+                # Search for relevant chunks
+                results = vector_store.search(query, llm_handler, top_k=top_k)
+
+                # Rerank if enabled
+                if use_reranking and results:
+                    results = vector_store.rerank_results(query, results)
+
+                # Generate response
+                if results:
+                    response = llm_handler.generate_response(query, results, model)
+                    st.session_state.cache[cache_key] = {
+                        'response': response,
+                        'results': results
+                    }
+                else:
+                    st.warning("No relevant results found")
+                    return
+
+            except Exception as e:
+                st.error(f"Search failed: {str(e)}")
+                return
+    
+    # Display cached results
+    cached_data = st.session_state.cache[cache_key]
+    st.subheader("Generated Response")
+    st.code(cached_data['response'], language="text")
+
+    st.subheader("Relevant Reviews")
+    st.code(format_results(cached_data['results']), language="text")
 
 # Footer
 st.markdown("---")
