@@ -65,9 +65,12 @@ class VectorStore:
                     {}
                 ))
 
-            # Upsert to Pinecone
-            print(f"Upserting {len(vectors)} vectors to Pinecone")
-            self.index.upsert(vectors=vectors)
+            # Batch upsert to Pinecone
+            batch_size = 100  # Smaller batch size to stay under 4MB limit
+            for i in range(0, len(vectors), batch_size):
+                batch = vectors[i:i + batch_size]
+                print(f"Upserting batch {i//batch_size + 1} of {len(vectors)//batch_size + 1}")
+                self.index.upsert(vectors=batch)
             print("Successfully upserted vectors and texts")
         except Exception as e:
             raise RuntimeError(f"Failed to upsert texts: {str(e)}")
