@@ -5,6 +5,7 @@ from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
 import pandas as pd
+from pinecone import ServerlessSpec
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -54,6 +55,7 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
         st.error(f"Failed to initialize components: {str(e)}")
         st.stop()
 
+
 # Initialize components with error handling
 try:
     llm_handler, vector_store = init_components()
@@ -78,7 +80,8 @@ input_method = st.radio("Select Input Method",
 
 if input_method == "File Upload":
     # File upload
-    uploaded_file = st.file_uploader("Upload Reviews File", type=['txt', 'csv'])
+    uploaded_file = st.file_uploader("Upload Reviews File",
+                                     type=['txt', 'csv'])
     index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
 
     if uploaded_file:
@@ -92,7 +95,8 @@ if input_method == "File Upload":
                         name=index_name,
                         dimension=vector_store.dimension,
                         metric='cosine',
-                        spec=ServerlessSpec(cloud='aws', region=vector_store.environment))
+                        spec=ServerlessSpec(cloud='aws',
+                                            region=vector_store.environment))
                     st.success(f"Created new index: {index_name}")
                 vector_store.index = vector_store.pc.Index(index_name)
                 vector_store.index_name = index_name
@@ -116,10 +120,14 @@ if input_method == "File Upload":
                 if file_type == 'csv':
                     st.subheader("Preview of processed reviews")
                     preview_df = pd.DataFrame([{
-                        'text': chunk['text'],
-                        'city': chunk['metadata'].get('city', ''),
-                        'rating': chunk['metadata'].get('rating', ''),
-                        'date': chunk['metadata'].get('date', '')
+                        'text':
+                        chunk['text'],
+                        'city':
+                        chunk['metadata'].get('city', ''),
+                        'rating':
+                        chunk['metadata'].get('rating', ''),
+                        'date':
+                        chunk['metadata'].get('date', '')
                     } for chunk in chunks[:5]])
                     st.dataframe(preview_df)
                 else:
@@ -132,7 +140,8 @@ if input_method == "File Upload":
                     vector_store.upsert_texts(chunks, llm_handler)
                     st.success(f"Processed {len(chunks)} chunks from the file")
                 except Exception as e:
-                    st.error(f"Failed to store chunks in vector database: {str(e)}")
+                    st.error(
+                        f"Failed to store chunks in vector database: {str(e)}")
 
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
@@ -170,11 +179,7 @@ if query and query != st.session_state.last_query:
     with st.spinner("Searching..."):
         try:
             # Search for relevant chunks
-            results = vector_store.search(
-                query,
-                llm_handler,
-                top_k=top_k
-            )
+            results = vector_store.search(query, llm_handler, top_k=top_k)
 
             # Rerank if enabled
             if use_reranking and results:
@@ -190,12 +195,15 @@ if query and query != st.session_state.last_query:
 
                 st.subheader("Relevant Reviews")
                 for i, result in enumerate(results, 1):
-                    with st.expander(f"Review {i} (Score: {result['score']:.4f})"):
+                    with st.expander(
+                            f"Review {i} (Score: {result['score']:.4f})"):
                         metadata = result.get('metadata', {})
                         if metadata:
-                            st.write(f"Location: {metadata.get('location', 'N/A')}")
+                            st.write(
+                                f"Location: {metadata.get('location', 'N/A')}")
                             st.write(f"City: {metadata.get('city', 'N/A')}")
-                            st.write(f"Rating: {metadata.get('rating', 'N/A')}")
+                            st.write(
+                                f"Rating: {metadata.get('rating', 'N/A')}")
                             st.write(f"Date: {metadata.get('date', 'N/A')}")
                         st.write("Text:", result['text'])
             else:
