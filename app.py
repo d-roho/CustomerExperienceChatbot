@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from typing import Optional, Tuple
 from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
@@ -16,16 +17,40 @@ st.set_page_config(
 
 # Initialize components
 @st.cache_resource
-def init_components():
-    llm_handler = LLMHandler()
-    vector_store = VectorStore(
-        api_key=os.environ.get('PINECONE_API_KEY'),
-        environment=os.environ.get('PINECONE_ENVIRONMENT'),
-        index_name='reviews-index'
-    )
-    return llm_handler, vector_store
+def init_components() -> Tuple[LLMHandler, VectorStore]:
+    """Initialize LLM and Vector Store components with error handling."""
+    try:
+        llm_handler = LLMHandler()
 
-llm_handler, vector_store = init_components()
+        # Get environment variables with proper error handling
+        api_key: Optional[str] = os.environ.get('PINECONE_API_KEY')
+        environment: Optional[str] = os.environ.get('PINECONE_ENVIRONMENT')
+
+        if not api_key or not environment:
+            st.error("Missing required Pinecone credentials. Please check your environment variables.")
+            st.stop()
+
+        try:
+            vector_store = VectorStore(
+                api_key=api_key,
+                environment=environment,
+                index_name='reviews-index'
+            )
+            return llm_handler, vector_store
+        except Exception as e:
+            st.error(f"Failed to initialize Pinecone: {str(e)}")
+            st.stop()
+
+    except Exception as e:
+        st.error(f"Failed to initialize components: {str(e)}")
+        st.stop()
+
+# Initialize components with error handling
+try:
+    llm_handler, vector_store = init_components()
+except Exception as e:
+    st.error(f"Application initialization failed: {str(e)}")
+    st.stop()
 
 # Sidebar controls
 st.sidebar.title("Parameters")
@@ -47,11 +72,13 @@ if uploaded_file:
         content = uploaded_file.read().decode()
         chunks = text_processor.process_file(content)
         st.session_state.processed_chunks = chunks
-        
+
         # Store in vector database
-        vector_store.upsert_texts(chunks, llm_handler.get_client())
-        
-        st.success(f"Processed {len(chunks)} chunks from the file")
+        try:
+            vector_store.upsert_texts(chunks, llm_handler.get_client())
+            st.success(f"Processed {len(chunks)} chunks from the file")
+        except Exception as e:
+            st.error(f"Failed to store chunks in vector database: {str(e)}")
 
 # Query interface
 st.header("Query the Reviews")
@@ -59,32 +86,36 @@ query = st.text_input("Enter your query")
 
 if query:
     with st.spinner("Searching..."):
-        # Search for relevant chunks
-        results = vector_store.search(
-            query,
-            llm_handler.get_client(),
-            top_k=top_k
-        )
-        
-        # Rerank if enabled
-        if use_reranking:
-            results = vector_store.rerank_results(
+        try:
+            # Search for relevant chunks
+            results = vector_store.search(
                 query,
-                results,
-                llm_handler.get_client()
+                llm_handler.get_client(),
+                top_k=top_k
             )
-        
-        # Generate response
-        response = llm_handler.generate_response(query, results)
-        
-        # Display results
-        st.subheader("Generated Response")
-        st.write(response)
-        
-        st.subheader("Relevant Passages")
-        for i, result in enumerate(results, 1):
-            with st.expander(f"Passage {i} (Score: {result['score']:.4f})"):
-                st.write(result['text'])
+
+            # Rerank if enabled
+            if use_reranking:
+                results = vector_store.rerank_results(
+                    query,
+                    results,
+                    llm_handler.get_client()
+                )
+
+            # Generate response
+            response = llm_handler.generate_response(query, results)
+
+            # Display results
+            st.subheader("Generated Response")
+            st.write(response)
+
+            st.subheader("Relevant Passages")
+            for i, result in enumerate(results, 1):
+                with st.expander(f"Passage {i} (Score: {result['score']:.4f})"):
+                    st.write(result['text'])
+
+        except Exception as e:
+            st.error(f"Search failed: {str(e)}")
 
 # Footer
 st.markdown("---")
