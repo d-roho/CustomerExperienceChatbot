@@ -23,36 +23,43 @@ model = st.sidebar.selectbox(
     index=0  # Default to Haiku
 )
 
-
 # Initialize components
 @st.cache_resource
 def init_components() -> Tuple[LLMHandler, VectorStore]:
     """Initialize LLM and Vector Store components with error handling."""
+    llm_handler = None
+    vector_store = None
+
     try:
         llm_handler = LLMHandler()
 
         # Get environment variables with proper error handling
-        api_key: Optional[str] = os.environ.get('PINECONE_API_KEY')
-        environment: Optional[str] = os.environ.get('PINECONE_ENVIRONMENT')
+        api_key = os.environ.get('PINECONE_API_KEY')
+        environment = os.environ.get('PINECONE_ENVIRONMENT')
 
         if not api_key or not environment:
-            st.error(
-                "Missing required Pinecone credentials. Please check your environment variables."
-            )
+            st.error("Missing required Pinecone credentials. Please check your environment variables.")
             st.stop()
 
-        try:
-            vector_store = VectorStore(api_key=api_key,
-                                       environment=environment,
-                                       index_name='reviews-index')
+        vector_store = VectorStore(
+            api_key=api_key,
+            environment=environment,
+            index_name='reviews-index'
+        )
+
+        if llm_handler and vector_store:
             return llm_handler, vector_store
-        except Exception as e:
-            st.error(f"Failed to initialize Pinecone: {str(e)}")
-            st.stop()
+        else:
+            raise Exception("Failed to initialize one or more components")
 
     except Exception as e:
         st.error(f"Failed to initialize components: {str(e)}")
+        if llm_handler is None:
+            st.error("Failed to initialize LLM Handler")
+        if vector_store is None:
+            st.error("Failed to initialize Vector Store")
         st.stop()
+        raise e
 
 # Initialize components with error handling
 try:
