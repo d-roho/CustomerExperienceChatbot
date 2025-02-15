@@ -80,9 +80,9 @@ if input_method == "File Upload":
             # Store in vector database
             try:
                 vector_store.upsert_texts(chunks, llm_handler)
-            st.success(f"Processed {len(chunks)} chunks from the file")
+                st.success(f"Processed {len(chunks)} chunks from the file")
             except Exception as e:
-        vector_store.upsert_texts(chunks, llm_handler)
+                st.error(f"Failed to upsert texts: {str(e)}")
     
 elif input_method == "Existing Vector Store":
     # Get available indexes
