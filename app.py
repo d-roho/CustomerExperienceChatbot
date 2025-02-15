@@ -190,7 +190,7 @@ if query and query != st.session_state.last_query:
 
                 # Display results
                 st.subheader("Generated Response")
-                st.write(response)
+                st.code(response, language="text")
 
                 st.subheader("Relevant Reviews")
                 for i, result in enumerate(results, 1):
@@ -198,13 +198,12 @@ if query and query != st.session_state.last_query:
                             f"Review {i} (Score: {result['score']:.4f})"):
                         metadata = result.get('metadata', {})
                         if metadata:
-                            st.write(
-                                f"Location: {metadata.get('location', 'N/A')}")
-                            st.write(f"City: {metadata.get('city', 'N/A')}")
-                            st.write(
-                                f"Rating: {metadata.get('rating', 'N/A')}")
-                            st.write(f"Date: {metadata.get('date', 'N/A')}")
-                        st.write("Text:", result['text'])
+                            metadata_text = f"""Location: {metadata.get('location', 'N/A')}
+City: {metadata.get('city', 'N/A')}
+Rating: {metadata.get('rating', 'N/A')}
+Date: {metadata.get('date', 'N/A')}"""
+                            st.code(metadata_text, language="text")
+                        st.code(f"Text: {result['text']}", language="text")
             else:
                 st.warning("No relevant results found")
 
