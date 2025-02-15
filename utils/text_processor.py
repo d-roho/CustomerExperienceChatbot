@@ -28,8 +28,9 @@ class TextProcessor:
     def process_csv_file(self, file_content: bytes) -> List[Dict[str, Any]]:
         """Process CSV file and return chunks with metadata."""
         try:
-            # Read CSV
-            df = pd.read_csv(file_content)
+            # Read CSV from bytes using StringIO
+            import io
+            df = pd.read_csv(io.BytesIO(file_content))
 
             # Ensure 'Text' column exists
             if 'Text' not in df.columns:
