@@ -21,13 +21,11 @@ class LLMHandler:
         self.openai = OpenAI(api_key=self.openai_key)
         self.model = None  # Will be set during generation
 
-    def generate_response(self, query: str, context: List[Dict[str,
-                                                               Any]]) -> str:
+    def generate_response(self, query: str, context: List[Dict[str, Any]], model: str) -> str:
         """Generate a response using Claude."""
         context_text = "\n".join([f"- {c['text']}" for c in context])
 
         try:
-            model = st.session_state.get('model', 'claude-3-haiku-20240307')
             response = self.anthropic.messages.create(
                 model=model,
                 max_tokens=2000,

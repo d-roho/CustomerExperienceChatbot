@@ -134,7 +134,7 @@ if query and search_button and (query != st.session_state.last_query
             print(f'Reviews Reranked. Top 1: \n {results[0]}')
 
             # Generate response
-            response = llm_handler.generate_response(query, results)
+            response = llm_handler.generate_response(query, results, model)
 
             # Display results
             st.subheader("Generated Response")
