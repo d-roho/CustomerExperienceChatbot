@@ -49,14 +49,20 @@ class VectorStore:
         try:
             from replit import db
             
-            print(f"Getting embeddings for {len(texts)} texts")
+            print(f"\nStarting embedding process for {len(texts)} texts")
+            print("Average chunk size:", sum(len(t) for t in texts) / len(texts), "characters")
+            print("Largest chunk size:", max(len(t) for t in texts), "characters")
+            
+            print("\nGenerating embeddings...")
             embeddings = client.get_embeddings(texts)
+            print(f"Successfully generated {len(embeddings)} embeddings")
 
-            # Store texts in Replit DB
+            print("\nStoring texts in Replit DB...")
             for i, text in enumerate(texts):
                 db[f"text_{i}"] = text
+            print("Successfully stored texts in DB")
 
-            # Prepare vectors for upload (without text metadata)
+            print("\nPreparing vectors for Pinecone upload...")
             vectors = []
             for i, embedding in enumerate(embeddings):
                 vectors.append((
@@ -64,14 +70,22 @@ class VectorStore:
                     embedding,
                     {}
                 ))
+            print(f"Prepared {len(vectors)} vectors")
 
             # Batch upsert to Pinecone
             batch_size = 100  # Smaller batch size to stay under 4MB limit
+            total_batches = (len(vectors) + batch_size - 1) // batch_size
+            print(f"\nStarting batch upload process ({total_batches} batches)...")
+            
             for i in range(0, len(vectors), batch_size):
                 batch = vectors[i:i + batch_size]
-                print(f"Upserting batch {i//batch_size + 1} of {len(vectors)//batch_size + 1}")
+                current_batch = i//batch_size + 1
+                print(f"Upserting batch {current_batch}/{total_batches} ({len(batch)} vectors)")
                 self.index.upsert(vectors=batch)
-            print("Successfully upserted vectors and texts")
+                print(f"Batch {current_batch} complete - {i + len(batch)}/{len(vectors)} vectors processed")
+            
+            print("\nVector upload complete!")
+            print(f"Successfully processed {len(vectors)} vectors across {total_batches} batches")
         except Exception as e:
             raise RuntimeError(f"Failed to upsert texts: {str(e)}")
 
