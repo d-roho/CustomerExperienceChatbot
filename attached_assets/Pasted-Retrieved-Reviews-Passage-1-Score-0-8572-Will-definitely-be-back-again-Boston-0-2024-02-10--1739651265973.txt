@@ -1,0 +1,16 @@
+Retrieved Reviews:
+
+Passage 1 (Score: 0.8572)
+Will definitely be back again!,Boston,0,2024-02-10 000000,Mejuri,5,126 Newbury St, Boston, MA,MA,Erin Kim, This place is awesome! All of the sales associates are so nice and helpful. Its also super clean and has a well thought out floor plan,Boston,0,2023-02-10 000000,Mejuri,5,126 Newbury St, Boston, MA,MA,Alex Miller, Such a wonderful shopping experience. The sales team was so helpful, kind, and informative.
+
+Passage 2 (Score: 0.8543)
+The store was packed but I still definitely got the help I required, not to mention that she remembered the visit.Overall a great experience at Mejuri,Boston,0,2024-02-10 000000,Mejuri,5,126 Newbury St, Boston, MA,MA,Ernest Goh, I was SO excited to hear Mejuri was opening a store on Newbury. Such a clean and fresh looking store.
+
+Passage 3 (Score: 0.8515)
+they really were excited that i was excited and i feel excellent vibes in my new necklaces!,Boston,0,2024-11-10 000000,Mejuri,5,126 Newbury St, Boston, MA,MA,Eliza McKown, I purchased the small croissant ring at the Newbury Street store. The stylists were extremely friendly, knowledgeable and helpful. All my questions were answered. I didnt have to wait to be helped and the checkout was easy. The jewelry is beautiful.
+
+Passage 4 (Score: 0.8515)
+I obviously did not bother my friend about it again, but this customer service is?? ?,Boston,0,2024-12-10 000000,Mejuri,1,126 Newbury St, Boston, MA,MA,Ayra Enders, Had a great experience shopping here on a weeknight when it was almost close. All of the salespeople were super helpful and accommodating, talking us through different pieces and helping us to find the right piece for our price point. I really appreciated their assistance and the selection of in store pieces is pretty wide-ranging.
+
+Passage 5 (Score: 0.8502)
+They have quality pieces that are timeless and affordable. We would definitely recommend this location!,Boston,0,2024-12-10 000000,Mejuri,5,126 Newbury St, Boston, MA,MA,Suzy Chu, I came in to buy some hoops and the person who helped me made me feel very unwelcome. She didnt greet me at all and whenever I asked a question, gave me very short answers which made me feel very rushed. She seemed annoyed the entire time I was there.
