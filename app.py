@@ -150,18 +150,17 @@ if query and search_button and (query != st.session_state.last_query
 if st.session_state.results and st.session_state.response:
     # Display results
     st.subheader("Generated Response")
-    st.write(st.session_state.response)
+    st.code(st.session_state.response)
 
     st.subheader("Relevant Passages")
-
-    # Display reviews in markdown
-    st.code("Retrieved Reviews\n")
-
-    # Display individual passages
+    
+    # Combine all passages into a single block
+    passages_text = "Retrieved Reviews:\n\n"
     for i, result in enumerate(st.session_state.results, 1):
-        st.markdown(f"## Passage {i} (Score: {result['score']:.4f})")
-        st.markdown(result['text'])
-        st.markdown("---")
+        passages_text += f"Passage {i} (Score: {result['score']:.4f})\n"
+        passages_text += f"{result['text']}\n\n"
+    
+    st.code(passages_text)
 
 # Footer
 st.markdown("---")
