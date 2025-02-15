@@ -4,16 +4,15 @@ from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
-from utils.db import MotherDuckStore  # New import
+from replit import db
 
 class VectorStore:
     def __init__(self, api_key: str, environment: str, index_name: str):
-        """Initialize Pinecone vector store and MotherDuck store."""
+        """Initialize Pinecone vector store."""
         self.api_key = api_key
         self.environment = environment
         self.index_name = index_name
         self.dimension = 1536  # OpenAI ada-002 embedding dimension
-        self.db = MotherDuckStore()  # Initialize MotherDuck store
 
         # Initialize Pinecone
         try:
@@ -41,7 +40,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to initialize Pinecone: {str(e)}")
 
     def upsert_texts(self, chunks: List[Dict[str, Any]], client: Anthropic) -> None:
-        """Upload text chunks with metadata to Pinecone and MotherDuck."""
+        """Upload text chunks with metadata to Pinecone and Replit DB."""
         try:
             print(f"\nStarting embedding process for {len(chunks)} chunks")
 
@@ -54,10 +53,20 @@ class VectorStore:
             embeddings = client.get_embeddings(texts)
             print(f"Successfully generated {len(embeddings)} embeddings")
 
-            # Store texts in MotherDuck DB
-            print("\nStoring texts in MotherDuck DB...")
-            self.db.store_chunks_batch(chunks)
-            print("Successfully stored all chunks in MotherDuck")
+            # Store texts in Replit DB with metadata in batches
+            print("\nStoring texts in Replit DB in batches...")
+            batch_size = 50
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i + batch_size]
+                batch_data = {}
+                for chunk in batch:
+                    chunk_id = chunk['metadata']['id']
+                    batch_data[f"text_{chunk_id}"] = {
+                        'text': chunk['text'],
+                        'metadata': chunk['metadata']
+                    }
+                db.update(batch_data)
+                print(f"Stored batch {i//batch_size + 1}/{(len(chunks) + batch_size - 1)//batch_size}")
 
             # Prepare vectors with metadata
             print("\nPreparing vectors for Pinecone upload...")
@@ -88,7 +97,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to upsert texts: {str(e)}")
 
     def search(self, query: str, client: Anthropic, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar texts using Pinecone and retrieve full texts from MotherDuck."""
+        """Search for similar texts in Pinecone."""
         try:
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]
@@ -100,10 +109,10 @@ class VectorStore:
                 include_metadata=True
             )
 
-            # Retrieve full texts and metadata from MotherDuck
+            # Retrieve full texts and metadata from Replit DB
             processed_results = []
             for match in results.matches:
-                stored_data = self.db.get_chunk(match.id)
+                stored_data = db.get(f"text_{match.id}")
                 if stored_data:
                     processed_results.append({
                         'text': stored_data['text'],
