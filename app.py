@@ -5,15 +5,12 @@ from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
 import pandas as pd
-from pinecone import ServerlessSpec
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
     st.session_state.processed_chunks = []
 if 'last_query' not in st.session_state:
     st.session_state.last_query = None
-if 'cache' not in st.session_state:
-    st.session_state.cache = {}
 
 # Page configuration
 st.set_page_config(page_title="RAG Pipeline for Reviews", layout="wide")
@@ -46,8 +43,8 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
 
         try:
             vector_store = VectorStore(api_key=api_key,
-                                     environment=environment,
-                                     index_name='reviews-index')
+                                       environment=environment,
+                                       index_name='reviews-index')
             return llm_handler, vector_store
         except Exception as e:
             st.error(f"Failed to initialize Pinecone: {str(e)}")
@@ -76,41 +73,22 @@ st.title("Review Analysis Pipeline")
 
 # Input selection method
 input_method = st.radio("Select Input Method",
-                       ["Existing Vector Store", "File Upload"],
-                       index=0)  # Default to Existing Vector Store
+                        ["Existing Vector Store", "File Upload"],
+                        index=0)  # Default to Existing Vector Store
 
 if input_method == "File Upload":
     # File upload
-    uploaded_file = st.file_uploader("Upload Reviews File",
-                                    type=['txt', 'csv'])
-    index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
+    uploaded_file = st.file_uploader("Upload Reviews File", type=['txt', 'csv'])
 
     if uploaded_file:
         file_type = uploaded_file.name.split('.')[-1].lower()
-
-        # Update vector store index
-        if index_name != vector_store.index_name:
-            try:
-                if index_name not in vector_store.pc.list_indexes().names():
-                    vector_store.pc.create_index(
-                        name=index_name,
-                        dimension=vector_store.dimension,
-                        metric='cosine',
-                        spec=ServerlessSpec(cloud='aws',
-                                          region=vector_store.environment))
-                    st.success(f"Created new index: {index_name}")
-                vector_store.index = vector_store.pc.Index(index_name)
-                vector_store.index_name = index_name
-            except Exception as e:
-                st.error(f"Failed to create/switch index: {str(e)}")
-                st.stop()
 
         # Process the file
         with st.spinner("Processing file..."):
             try:
                 # Initialize text processor
                 text_processor = TextProcessor(chunk_size=chunk_size,
-                                            chunk_overlap=chunk_overlap)
+                                               chunk_overlap=chunk_overlap)
 
                 # Process file based on type
                 content = uploaded_file.read()
@@ -120,14 +98,12 @@ if input_method == "File Upload":
                 # Display preview
                 if file_type == 'csv':
                     st.subheader("Preview of processed reviews")
-                    preview_df = pd.DataFrame([
-                        {
-                            'text': chunk['text'],
-                            'city': chunk['metadata'].get('city', 'N/A'),
-                            'rating': chunk['metadata'].get('rating', 'N/A'),
-                            'date': chunk['metadata'].get('date', 'N/A')
-                        } for chunk in chunks[:5]
-                    ])
+                    preview_df = pd.DataFrame([{
+                        'text': chunk['text'],
+                        'city': chunk['metadata'].get('city', ''),
+                        'rating': chunk['metadata'].get('rating', ''),
+                        'date': chunk['metadata'].get('date', '')
+                    } for chunk in chunks[:5]])
                     st.dataframe(preview_df)
                 else:
                     st.subheader("Preview of text chunks")
@@ -139,8 +115,7 @@ if input_method == "File Upload":
                     vector_store.upsert_texts(chunks, llm_handler)
                     st.success(f"Processed {len(chunks)} chunks from the file")
                 except Exception as e:
-                    st.error(
-                        f"Failed to store chunks in vector database: {str(e)}")
+                    st.error(f"Failed to store chunks in vector database: {str(e)}")
 
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
@@ -163,29 +138,26 @@ elif input_method == "Existing Vector Store":
     else:
         st.warning("No existing vector stores found")
 
+# Initialize session state for results
+if 'results' not in st.session_state:
+    st.session_state.results = None
+if 'response' not in st.session_state:
+    st.session_state.response = None
+
 # Query interface
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
-search_button = st.button("Search")
 
-def format_results(results):
-    reviews_text = []
-    for i, result in enumerate(results, 1):
-        metadata = result.get('metadata', {})
-        review_text = f"""Review {i} (Score: {result['score']:.4f})
-Location: {metadata.get('location', 'N/A')}
-City: {metadata.get('city', 'N/A')}
-Rating: {metadata.get('rating', 'N/A')}
-Date: {metadata.get('date', 'N/A')}
-Text: {result['text']}"""
-        reviews_text.append(review_text)
-    return "\n" + "-"*80 + "\n\n".join(reviews_text)
-
-if search_button and query:
+if query and query != st.session_state.last_query:
+    st.session_state.last_query = query
     with st.spinner("Searching..."):
         try:
             # Search for relevant chunks
-            results = vector_store.search(query, llm_handler, top_k=top_k)
+            results = vector_store.search(
+                query,
+                llm_handler,
+                top_k=top_k
+            )
 
             # Rerank if enabled
             if use_reranking and results:
@@ -195,6 +167,7 @@ if search_button and query:
             if results:
                 response = llm_handler.generate_response(query, results, model)
 
+                # Display results
                 st.subheader("Generated Response")
                 st.write(response)
 
@@ -202,10 +175,11 @@ if search_button and query:
                 for i, result in enumerate(results, 1):
                     with st.expander(f"Review {i} (Score: {result['score']:.4f})"):
                         metadata = result.get('metadata', {})
-                        st.write(f"Location: {metadata.get('location', 'N/A')}")
-                        st.write(f"City: {metadata.get('city', 'N/A')}")
-                        st.write(f"Rating: {metadata.get('rating', 'N/A')}")
-                        st.write(f"Date: {metadata.get('date', 'N/A')}")
+                        if metadata:
+                            st.write(f"Location: {metadata.get('location', 'N/A')}")
+                            st.write(f"City: {metadata.get('city', 'N/A')}")
+                            st.write(f"Rating: {metadata.get('rating', 'N/A')}")
+                            st.write(f"Date: {metadata.get('date', 'N/A')}")
                         st.write("Text:", result['text'])
             else:
                 st.warning("No relevant results found")

@@ -28,9 +28,8 @@ class TextProcessor:
     def process_csv_file(self, file_content: bytes) -> List[Dict[str, Any]]:
         """Process CSV file and return chunks with metadata."""
         try:
-            # Read CSV from bytes using StringIO
-            import io
-            df = pd.read_csv(io.BytesIO(file_content))
+            # Read CSV
+            df = pd.read_csv(file_content)
 
             # Ensure 'Text' column exists
             if 'Text' not in df.columns:
@@ -47,10 +46,10 @@ class TextProcessor:
                 # Create metadata dictionary
                 metadata = {
                     'id': str(uuid.uuid4()),
-                    'city': str(row.get('string_City', '')) if not pd.isna(row.get('string_City')) else '',
-                    'rating': float(row.get('score_Overall Rating', 0)) if not pd.isna(row.get('score_Overall Rating')) else 0.0,
-                    'date': str(row.get('date_Date Created', '')) if not pd.isna(row.get('date_Date Created')) else '',
-                    'location': str(row.get('string_Place Location', '')) if not pd.isna(row.get('string_Place Location')) else ''
+                    'city': row.get('string_City', ''),
+                    'rating': row.get('score_Overall Rating', 0),
+                    'date': row.get('date_Date Created', ''),
+                    'location': row.get('string_Place Location', '')
                 }
 
                 chunks.append({

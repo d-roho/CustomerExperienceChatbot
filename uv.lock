@@ -1137,22 +1137,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pinecone"
-version = "6.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "certifi" },
-    { name = "pinecone-plugin-interface" },
-    { name = "python-dateutil" },
-    { name = "typing-extensions" },
-    { name = "urllib3", marker = "python_full_version < '4.0'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/aa/acbfc236698c2b11d53711a86a35f533423b3553e0859255cdd2ced3c6c3/pinecone-6.0.1.tar.gz", hash = "sha256:2fbca13153d32d1a012a12eb10472bd5dbb645be8e441381ad88349d8b2198bb", size = 174677 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/df/c65cd8c825953561e7fe70addd0b41e20560abda8f54ab429384cf94f7a1/pinecone-6.0.1-py3-none-any.whl", hash = "sha256:9088c6fc85bc1d70b259b108c59df2b3687a82da491123be8f3c7dfef051ada8", size = 421359 },
-]
-
-[[package]]
 name = "pinecone-client"
 version = "5.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1560,8 +1544,6 @@ dependencies = [
     { name = "anthropic" },
     { name = "nltk" },
     { name = "openai" },
-    { name = "pandas" },
-    { name = "pinecone" },
     { name = "pinecone-client" },
     { name = "replit" },
     { name = "sentence-transformers" },
@@ -1573,8 +1555,6 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.45.2" },
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "openai", specifier = ">=1.63.0" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pinecone", specifier = ">=6.0.1" },
     { name = "pinecone-client", specifier = ">=5.0.1" },
     { name = "replit", specifier = ">=4.1.0" },
     { name = "sentence-transformers", specifier = ">=3.4.1" },
