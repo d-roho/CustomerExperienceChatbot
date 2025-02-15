@@ -1,9 +1,10 @@
 import streamlit as st
 import os
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict, Any
 from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
+import pandas as pd
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -53,7 +54,6 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
         st.error(f"Failed to initialize components: {str(e)}")
         st.stop()
 
-
 # Initialize components with error handling
 try:
     llm_handler, vector_store = init_components()
@@ -78,40 +78,47 @@ input_method = st.radio("Select Input Method",
 
 if input_method == "File Upload":
     # File upload
-    uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
-    index_name = st.text_input("Enter Pinecone Index Name", "reviews-index")
+    uploaded_file = st.file_uploader("Upload Reviews File", type=['txt', 'csv'])
 
     if uploaded_file:
-        # Update vector store with new index
-        vector_store.index_name = index_name
-        if index_name not in vector_store.pc.list_indexes().names():
-            try:
-                vector_store.pc.create_index(
-                    name=index_name,
-                    dimension=vector_store.dimension,
-                    metric='cosine',
-                    spec=ServerlessSpec(
-                        cloud='aws',
-                        region=vector_store.environment))
-                st.success(f"Created new index: {index_name}")
-            except Exception as e:
-                st.error(f"Failed to create index: {str(e)}")
-                st.stop()
-        vector_store.index = vector_store.pc.Index(index_name)
-        with st.spinner("Processing file..."):
-            # Read and process the file
-            text_processor = TextProcessor(chunk_size=chunk_size,
-                                           chunk_overlap=chunk_overlap)
-            content = uploaded_file.read().decode()
-            chunks = text_processor.process_file(content)
-            st.session_state.processed_chunks = chunks
+        file_type = uploaded_file.name.split('.')[-1].lower()
 
-            # Store in vector database
+        # Process the file
+        with st.spinner("Processing file..."):
             try:
-                vector_store.upsert_texts(chunks, llm_handler)
-                st.success(f"Processed {len(chunks)} chunks from the file")
+                # Initialize text processor
+                text_processor = TextProcessor(chunk_size=chunk_size,
+                                               chunk_overlap=chunk_overlap)
+
+                # Process file based on type
+                content = uploaded_file.read()
+                chunks = text_processor.process_file(content, file_type)
+                st.session_state.processed_chunks = chunks
+
+                # Display preview
+                if file_type == 'csv':
+                    st.subheader("Preview of processed reviews")
+                    preview_df = pd.DataFrame([{
+                        'text': chunk['text'],
+                        'city': chunk['metadata'].get('city', ''),
+                        'rating': chunk['metadata'].get('rating', ''),
+                        'date': chunk['metadata'].get('date', '')
+                    } for chunk in chunks[:5]])
+                    st.dataframe(preview_df)
+                else:
+                    st.subheader("Preview of text chunks")
+                    for chunk in chunks[:5]:
+                        st.text(chunk['text'][:200] + "...")
+
+                # Store in vector database
+                try:
+                    vector_store.upsert_texts(chunks, llm_handler)
+                    st.success(f"Processed {len(chunks)} chunks from the file")
+                except Exception as e:
+                    st.error(f"Failed to store chunks in vector database: {str(e)}")
+
             except Exception as e:
-                st.error(f"Failed to upsert texts: {str(e)}")
+                st.error(f"Failed to process file: {str(e)}")
 
 elif input_method == "Existing Vector Store":
     # Get available indexes
@@ -123,6 +130,7 @@ elif input_method == "Existing Vector Store":
             available_indexes,
             index=available_indexes.index('reviews-index')
             if 'reviews-index' in available_indexes else 0)
+
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
             vector_store.index_name = selected_index
@@ -140,45 +148,44 @@ if 'response' not in st.session_state:
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
-search_button = st.button("Search")
-if query and search_button and (query != st.session_state.last_query
-                                or search_button):
+if query and query != st.session_state.last_query:
     st.session_state.last_query = query
     with st.spinner("Searching..."):
         try:
             # Search for relevant chunks
-            st.session_state.results = vector_store.search(query,
-                                                           llm_handler,
-                                                           top_k=top_k)
-            print(f'Reviews Retrieved. Top 1: \n {st.session_state.results[0]}')
-
+            results = vector_store.search(
+                query,
+                llm_handler,
+                top_k=top_k
+            )
 
             # Rerank if enabled
-            if use_reranking:
-                st.session_state.results = vector_store.rerank_results(
-                    query, st.session_state.results)
-            print(f'Reviews Reranked. Top 1: \n {st.session_state.results[0]}')
+            if use_reranking and results:
+                results = vector_store.rerank_results(query, results)
 
             # Generate response
-            st.session_state.response = llm_handler.generate_response(
-                query, st.session_state.results, model)
+            if results:
+                response = llm_handler.generate_response(query, results, model)
+
+                # Display results
+                st.subheader("Generated Response")
+                st.write(response)
+
+                st.subheader("Relevant Reviews")
+                for i, result in enumerate(results, 1):
+                    with st.expander(f"Review {i} (Score: {result['score']:.4f})"):
+                        metadata = result.get('metadata', {})
+                        if metadata:
+                            st.write(f"Location: {metadata.get('location', 'N/A')}")
+                            st.write(f"City: {metadata.get('city', 'N/A')}")
+                            st.write(f"Rating: {metadata.get('rating', 'N/A')}")
+                            st.write(f"Date: {metadata.get('date', 'N/A')}")
+                        st.write("Text:", result['text'])
+            else:
+                st.warning("No relevant results found")
+
         except Exception as e:
             st.error(f"Search failed: {str(e)}")
-
-if st.session_state.results and st.session_state.response:
-    # Display results
-    st.subheader("Generated Response")
-    st.code(st.session_state.response)
-
-    st.subheader("Relevant Passages")
-
-    # Combine all passages into a single block
-    passages_text = "Retrieved Reviews:\n\n"
-    for i, result in enumerate(st.session_state.results, 1):
-        passages_text += f"Passage {i} (Score: {result['score']:.4f})\n"
-        passages_text += f"{result['text']}\n\n"
-
-    st.code(passages_text)
 
 # Footer
 st.markdown("---")
