@@ -110,6 +110,7 @@ if query:
                 llm_handler,
                 top_k=top_k
             )
+            print('Reviews Retrieved')
 
             # Rerank if enabled
             if use_reranking:
