@@ -133,7 +133,8 @@ if query and search_button and (query != st.session_state.last_query
             st.session_state.results = vector_store.search(query,
                                                            llm_handler,
                                                            top_k=top_k)
-            print('Reviews Retrieved')
+            print(f'Reviews Retrieved. Top 1: \n {st.session_state.results[0]}')
+
 
             # Rerank if enabled
             if use_reranking:
