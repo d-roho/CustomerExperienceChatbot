@@ -119,28 +119,27 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to search: {str(e)}")
 
-def rerank_results(self, query: str,
-       results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-"""Rerank results using semantic similarity."""
-    try:
-        from sentence_transformers import CrossEncoder
-        model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+def rerank_results(self, query: str, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Rerank results using semantic similarity."""
+        try:
+            from sentence_transformers import CrossEncoder
+            model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
         except Exception as e:
-        print(f"Warning: Reranking model not available: {str(e)}")
-        return results
+            print(f"Warning: Reranking model not available: {str(e)}")
+            return results
         
-    try:
-        # Prepare pairs for reranking
-        pairs = [[query, result['text']] for result in results]
-        scores = model.predict(pairs)
-        
-        # Update scores
-        for i, result in enumerate(results):
-        result['score'] = float(scores[i])
-        
-        # Sort by new scores
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return results
-    except Exception as e:
-        print(f"Warning: Reranking failed: {str(e)}")
-    return results
+        try:
+            # Prepare pairs for reranking
+            pairs = [[query, result['text']] for result in results]
+            scores = model.predict(pairs)
+            
+            # Update scores
+            for i, result in enumerate(results):
+                result['score'] = float(scores[i])
+            
+            # Sort by new scores
+            results.sort(key=lambda x: x['score'], reverse=True)
+            return results
+        except Exception as e:
+            print(f"Warning: Reranking failed: {str(e)}")
+            return results
