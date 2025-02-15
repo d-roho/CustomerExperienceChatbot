@@ -211,25 +211,22 @@ if search_button and query:
                         'response': response,
                         'results': results
                     }
-                    # Display cached results
-                    st.subheader("Generated Response")
-                    st.code(response, language="text")
-
-                    st.subheader("Relevant Reviews")
-                    st.code(format_results(results), language="text")
                 else:
                     st.warning("No relevant results found")
+                    return
 
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
+                return
     
-    # Display cached results
-    cached_data = st.session_state.cache[cache_key]
-    st.subheader("Generated Response")
-    st.code(cached_data['response'], language="text")
+    # Display cached results if available
+    if cache_key in st.session_state.cache:
+        cached_data = st.session_state.cache[cache_key]
+        st.subheader("Generated Response")
+        st.code(cached_data['response'], language="text")
 
-    st.subheader("Relevant Reviews")
-    st.code(format_results(cached_data['results']), language="text")
+        st.subheader("Relevant Reviews")
+        st.code(format_results(cached_data['results']), language="text")
 
 # Footer
 st.markdown("---")
