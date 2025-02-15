@@ -70,20 +70,20 @@ if input_method == "File Upload":
     uploaded_file = st.file_uploader("Upload Reviews Text File", type=['txt'])
     
     if uploaded_file:
-    with st.spinner("Processing file..."):
-        # Read and process the file
-        text_processor = TextProcessor(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-        content = uploaded_file.read().decode()
-        chunks = text_processor.process_file(content)
-        st.session_state.processed_chunks = chunks
-
-        # Store in vector database
-        try:
-            vector_store.upsert_texts(chunks, llm_handler)
+        with st.spinner("Processing file..."):
+            # Read and process the file
+            text_processor = TextProcessor(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            content = uploaded_file.read().decode()
+            chunks = text_processor.process_file(content)
+            st.session_state.processed_chunks = chunks
+    
+            # Store in vector database
+            try:
+                vector_store.upsert_texts(chunks, llm_handler)
             st.success(f"Processed {len(chunks)} chunks from the file")
-        except Exception as e:
-            st.error(f"Failed to store chunks in vector database: {str(e)}")
-
+            except Exception as e:
+        vector_store.upsert_texts(chunks, llm_handler)
+    
 elif input_method == "Existing Vector Store":
     # Get available indexes
     available_indexes = vector_store.pc.list_indexes().names()
