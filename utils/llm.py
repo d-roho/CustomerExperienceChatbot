@@ -31,16 +31,10 @@ class LLMHandler:
                 model=self.model,
                 max_tokens=2000,
                 temperature=0,
+                system="You are a knowledgeable assistant. Use the provided context to answer questions accurately.",
                 messages=[{
-                    "role":
-                    "system",
-                    "content":
-                    "You are a knowledgeable assistant. Use the provided context to answer questions accurately."
-                }, {
-                    "role":
-                    "user",
-                    "content":
-                    f"Context:\n{context_text}\n\nQuestion: {query}"
+                    "role": "user",
+                    "content": f"Context:\n{context_text}\n\nQuestion: {query}"
                 }])
             return response.content[0].text
         except Exception as e:
