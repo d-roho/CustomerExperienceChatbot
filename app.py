@@ -191,17 +191,20 @@ if query and query != st.session_state.last_query:
                 st.code(response, language="text")
 
                 st.subheader("Relevant Reviews")
+                reviews_text = []
                 for i, result in enumerate(results, 1):
-                    with st.expander(
-                            f"Review {i} (Score: {result['score']:.4f})"):
-                        metadata = result.get('metadata', {})
-                        if metadata:
-                            metadata_text = f"""Location: {metadata.get('location', 'N/A')}
+                    metadata = result.get('metadata', {})
+                    review_text = f"""Review {i} (Score: {result['score']:.4f})
+Location: {metadata.get('location', 'N/A')}
 City: {metadata.get('city', 'N/A')}
 Rating: {metadata.get('rating', 'N/A')}
-Date: {metadata.get('date', 'N/A')}"""
-                            st.code(metadata_text, language="text")
-                        st.code(f"Text: {result['text']}", language="text")
+Date: {metadata.get('date', 'N/A')}
+Text: {result['text']}
+"""
+                    reviews_text.append(review_text)
+                
+                all_reviews = "\n" + "-" * 80 + "\n\n".join(reviews_text)
+                st.code(all_reviews, language="text")
             else:
                 st.warning("No relevant results found")
 
