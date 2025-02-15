@@ -45,24 +45,30 @@ class VectorStore:
             raise RuntimeError(f"Failed to initialize Pinecone: {str(e)}")
 
     def upsert_texts(self, texts: List[str], client: Anthropic) -> None:
-        """Upload text chunks to Pinecone."""
+        """Upload text chunks to Pinecone and Replit DB."""
         try:
+            from replit import db
+            
             print(f"Getting embeddings for {len(texts)} texts")
             embeddings = client.get_embeddings(texts)
 
-            # Prepare vectors for upload
+            # Store texts in Replit DB
+            for i, text in enumerate(texts):
+                db[f"text_{i}"] = text
+
+            # Prepare vectors for upload (without text metadata)
             vectors = []
-            for i, (text, embedding) in enumerate(zip(texts, embeddings)):
+            for i, embedding in enumerate(embeddings):
                 vectors.append((
                     str(i),
                     embedding,
-                    {"text": text}
+                    {}
                 ))
 
             # Upsert to Pinecone
             print(f"Upserting {len(vectors)} vectors to Pinecone")
             self.index.upsert(vectors=vectors)
-            print("Successfully upserted vectors")
+            print("Successfully upserted vectors and texts")
         except Exception as e:
             raise RuntimeError(f"Failed to upsert texts: {str(e)}")
 
@@ -79,9 +85,10 @@ class VectorStore:
                 include_metadata=True
             )
 
+            from replit import db
             return [
                 {
-                    "text": match.metadata["text"],
+                    "text": db.get(f"text_{match.id}"),
                     "score": match.score
                 }
                 for match in results.matches
