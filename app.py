@@ -24,6 +24,17 @@ model = st.sidebar.selectbox(
 )
 
 # Initialize components
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def search_and_rerank(query: str, top_k: int, use_reranking: bool) -> List[Dict[str, Any]]:
+    results = vector_store.search(query, llm_handler, top_k=top_k)
+    if use_reranking and results:
+        results = vector_store.rerank_results(query, results)
+    return results
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def generate_llm_response(query: str, results: List[Dict[str, Any]], model: str) -> str:
+    return llm_handler.generate_response(query, results, model)
+
 @st.cache_resource
 def init_components() -> Tuple[LLMHandler, VectorStore]:
     """Initialize LLM and Vector Store components with error handling."""
@@ -159,20 +170,12 @@ if query and query != st.session_state.last_query:
     st.session_state.last_query = query
     with st.spinner("Searching..."):
         try:
-            # Search for relevant chunks
-            results = vector_store.search(
-                query,
-                llm_handler,
-                top_k=top_k
-            )
+            # Search and rerank using cached function
+            results = search_and_rerank(query, top_k, use_reranking)
 
-            # Rerank if enabled
-            if use_reranking and results:
-                results = vector_store.rerank_results(query, results)
-
-            # Generate response
+            # Generate response using cached function
             if results:
-                response = llm_handler.generate_response(query, results, model)
+                response = generate_llm_response(query, results, model)
 
                 # Display results
                 st.subheader("Generated Response")
