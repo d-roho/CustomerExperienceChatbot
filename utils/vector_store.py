@@ -2,6 +2,8 @@ import re
 from typing import List, Dict, Any
 from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
+from sentence_transformers import SentenceTransformer
+import torch
 
 class VectorStore:
     def __init__(self, api_key: str, environment: str, index_name: str):
@@ -10,6 +12,15 @@ class VectorStore:
         self.environment = environment
         self.index_name = index_name
         self.dimension = 1536  # OpenAI ada-002 embedding dimension
+
+        # Initialize reranking model
+        try:
+            self.rerank_model = SentenceTransformer('jinaai/jina-colbert-v2')
+            self.rerank_model.to('cuda' if torch.cuda.is_available() else 'cpu')
+            print("Initialized Jina ColBERT v2 model for reranking")
+        except Exception as e:
+            print(f"Warning: Could not initialize reranking model: {str(e)}")
+            self.rerank_model = None
 
         # Initialize Pinecone with new API
         try:
@@ -48,11 +59,11 @@ class VectorStore:
         """Upload text chunks to Pinecone and Replit DB."""
         try:
             from replit import db
-            
+
             print(f"\nStarting embedding process for {len(texts)} texts")
             print("Average chunk size:", sum(len(t) for t in texts) / len(texts), "characters")
             print("Largest chunk size:", max(len(t) for t in texts), "characters")
-            
+
             print("\nGenerating embeddings...")
             embeddings = client.get_embeddings(texts)
             print(f"Successfully generated {len(embeddings)} embeddings")
@@ -76,12 +87,12 @@ class VectorStore:
             batch_size = 100  # Smaller batch size to stay under 4MB limit
             total_batches = (len(vectors) + batch_size - 1) // batch_size
             print(f"\nStarting batch upload process ({total_batches} batches)...")
-            
+
             for i in range(0, len(vectors), batch_size):
                 batch = vectors[i:i + batch_size]
                 current_batch = i//batch_size + 1
                 print(f"\nUpserting batch {current_batch}/{total_batches} ({len(batch)} vectors)")
-                
+
                 # Print random chunk from this batch
                 from random import choice
                 random_id = int(choice(batch)[0])  # Get ID from random vector in batch
@@ -90,10 +101,10 @@ class VectorStore:
                 print("-" * 50)
                 print(db.get(f"text_{random_id}"))
                 print("-" * 50)
-                
+
                 self.index.upsert(vectors=batch)
                 print(f"Batch {current_batch} complete - {i + len(batch)}/{len(vectors)} vectors processed")
-            
+
             print("\nVector upload complete!")
             print(f"Successfully processed {len(vectors)} vectors across {total_batches} batches")
         except Exception as e:
@@ -125,37 +136,35 @@ class VectorStore:
 
     def rerank_results(self, query: str, results: List[Dict[str, Any]], 
                       client: Anthropic) -> List[Dict[str, Any]]:
-        """Rerank results using semantic similarity."""
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that evaluates the relevance of text passages to a query. Rate each passage's relevance from 0 to 1."
-            },
-            {
-                "role": "user",
-                "content": f"Query: {query}\n\nRate the relevance of each passage:\n" + 
-                          "\n".join([f"Passage {i+1}: {r['text']}" for i, r in enumerate(results)])
-            }
-        ]
-
-        response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            messages=messages
-        )
-
-        # Extract scores from response
+        """Rerank results using Jina ColBERT v2."""
         try:
-            scores = [float(score) for score in re.findall(r"(\d*\.?\d+)", response.content)]
+            if not self.rerank_model:
+                print("Warning: Reranking model not available, falling back to original scores")
+                return results
 
-            # Combine original and semantic scores
-            for i, result in enumerate(results):
-                result["combined_score"] = (result["score"] + scores[i]) / 2
+            # Extract texts for reranking
+            texts = [result["text"] for result in results]
+
+            # Get embeddings for query and texts
+            query_embedding = self.rerank_model.encode(query, convert_to_tensor=True)
+            text_embeddings = self.rerank_model.encode(texts, convert_to_tensor=True)
+
+            # Calculate cosine similarities
+            similarities = torch.nn.functional.cosine_similarity(
+                query_embedding.unsqueeze(0), 
+                text_embeddings
+            ).tolist()
+
+            # Update scores and sort
+            for result, similarity in zip(results, similarities):
+                # Combine original score with reranking score
+                result["combined_score"] = (result["score"] + similarity) / 2
 
             # Sort by combined score
             results.sort(key=lambda x: x["combined_score"], reverse=True)
 
-        except Exception:
-            # Fall back to original scoring if parsing fails
-            pass
+            return results
 
-        return results
+        except Exception as e:
+            print(f"Warning: Reranking failed: {str(e)}")
+            return results  # Fall back to original ranking

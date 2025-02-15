@@ -9,5 +9,6 @@ dependencies = [
     "openai>=1.63.0",
     "pinecone-client>=5.0.1",
     "replit>=4.1.0",
+    "sentence-transformers>=3.4.1",
     "streamlit>=1.42.0",
 ]
