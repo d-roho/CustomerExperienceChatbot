@@ -136,8 +136,7 @@ class VectorStore:
         """Rerank results using semantic similarity."""
         try:
             from sentence_transformers import CrossEncoder
-            model = CrossEncoder('jinaai/jina-colbert-v2',
-                                 trust_remote_code=True)
+            model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
         except Exception as e:
             print(f"Warning: Reranking model not available: {str(e)}")
             return results
