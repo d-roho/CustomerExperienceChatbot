@@ -130,17 +130,22 @@ if query and search_button and (query != st.session_state.last_query
     with st.spinner("Searching..."):
         try:
             # Search for relevant chunks
-            st.session_state.results = vector_store.search(query, llm_handler, top_k=top_k)
+            st.session_state.results = vector_store.search(query,
+                                                           llm_handler,
+                                                           top_k=top_k)
             print('Reviews Retrieved')
 
             # Rerank if enabled
             if use_reranking:
-                st.session_state.results = vector_store.rerank_results(query, st.session_state.results,
-                                                      llm_handler)
+                st.session_state.results = vector_store.rerank_results(
+                    query, st.session_state.results, llm_handler)
             print(f'Reviews Reranked. Top 1: \n {st.session_state.results[0]}')
 
             # Generate response
-            st.session_state.response = llm_handler.generate_response(query, st.session_state.results, model)
+            st.session_state.response = llm_handler.generate_response(
+                query, st.session_state.results, model)
+        except Exception as e:
+            st.error(f"Search failed: {str(e)}")
 
 if st.session_state.results and st.session_state.response:
     # Display results
@@ -148,23 +153,22 @@ if st.session_state.results and st.session_state.response:
     st.write(st.session_state.response)
 
     st.subheader("Relevant Passages")
-    
+
     # Create formatted text for all reviews
     all_reviews_text = "# Retrieved Reviews\n\n"
     for i, result in enumerate(st.session_state.results, 1):
         all_reviews_text += f"## Passage {i} (Score: {result['score']:.4f})\n{result['text']}\n\n"
-    
+
     # Add copy all button
     if st.button("📋 Copy All Reviews"):
         st.write("All reviews copied!")
         st.javascript(f"""
             navigator.clipboard.writeText({repr(all_reviews_text)});
         """)
-    
+
     # Display individual passages
     for i, result in enumerate(st.session_state.results, 1):
-        with st.expander(
-                f"Passage {i} (Score: {result['score']:.4f})"):
+        with st.expander(f"Passage {i} (Score: {result['score']:.4f})"):
             col1, col2 = st.columns([0.9, 0.1])
             with col1:
                 st.write(result['text'])
@@ -174,9 +178,6 @@ if st.session_state.results and st.session_state.response:
                     st.javascript(f"""
                         navigator.clipboard.writeText("{result['text']}");
                     """)
-
-        except Exception as e:
-                st.error(f"Search failed: {str(e)}")
 
 # Footer
 st.markdown("---")
