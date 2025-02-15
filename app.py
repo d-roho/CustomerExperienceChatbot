@@ -75,7 +75,7 @@ if uploaded_file:
 
         # Store in vector database
         try:
-            vector_store.upsert_texts(chunks, llm_handler.get_client())
+            vector_store.upsert_texts(chunks, llm_handler)
             st.success(f"Processed {len(chunks)} chunks from the file")
         except Exception as e:
             st.error(f"Failed to store chunks in vector database: {str(e)}")
@@ -90,7 +90,7 @@ if query:
             # Search for relevant chunks
             results = vector_store.search(
                 query,
-                llm_handler.get_client(),
+                llm_handler,
                 top_k=top_k
             )
 
@@ -99,7 +99,7 @@ if query:
                 results = vector_store.rerank_results(
                     query,
                     results,
-                    llm_handler.get_client()
+                    llm_handler
                 )
 
             # Generate response

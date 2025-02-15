@@ -44,32 +44,11 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Pinecone: {str(e)}")
 
-    def get_embeddings(self, texts: List[str], client: Anthropic) -> List[List[float]]:
-        """Get embeddings for texts using Claude."""
-        embeddings = []
-        for text in texts:
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "Respond with 'ok' - we only need the embedding."
-                    },
-                    {
-                        "role": "user",
-                        "content": text
-                    }
-                ]
-            )
-            embeddings.append(response.usage.input_tokens)
-        return embeddings
-
     def upsert_texts(self, texts: List[str], client: Anthropic) -> None:
         """Upload text chunks to Pinecone."""
         try:
             print(f"Getting embeddings for {len(texts)} texts")
-            embeddings = self.get_embeddings(texts, client)
+            embeddings = client.get_embeddings(texts)
 
             # Prepare vectors for upload
             vectors = []
@@ -91,7 +70,7 @@ class VectorStore:
         """Search for similar texts in Pinecone."""
         try:
             print(f"Getting embedding for query: {query[:50]}...")
-            query_embedding = self.get_embeddings([query], client)[0]
+            query_embedding = client.get_embeddings([query])[0]
 
             print(f"Searching Pinecone with top_k={top_k}")
             results = self.index.query(
