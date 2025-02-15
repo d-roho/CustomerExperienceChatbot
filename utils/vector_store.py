@@ -14,15 +14,6 @@ class VectorStore:
         self.index_name = index_name
         self.dimension = 1536  # OpenAI ada-002 embedding dimension
 
-        # Initialize reranking model
-        try:
-            self.rerank_model = SentenceTransformer('jinaai/jina-colbert-v2')
-            self.rerank_model.to('cuda' if torch.cuda.is_available() else 'cpu')
-            print("Initialized Jina ColBERT v2 model for reranking")
-        except Exception as e:
-            print(f"Warning: Could not initialize reranking model: {str(e)}")
-            self.rerank_model = None
-
         # Initialize Pinecone
         try:
             self.pc = Pinecone(api_key=api_key)
@@ -128,35 +119,28 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to search: {str(e)}")
 
-    def rerank_results(self, query: str, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Rerank results using Jina ColBERT v2."""
-        try:
-            if not self.rerank_model:
-                print("Warning: Reranking model not available, falling back to original scores")
-                return results
-
-            # Extract texts for reranking
-            texts = [result['text'] for result in results]
-
-            # Get embeddings for query and texts
-            query_embedding = self.rerank_model.encode(query, convert_to_tensor=True)
-            text_embeddings = self.rerank_model.encode(texts, convert_to_tensor=True)
-
-            # Calculate cosine similarities
-            similarities = torch.nn.functional.cosine_similarity(
-                query_embedding.unsqueeze(0), 
-                text_embeddings
-            ).tolist()
-
-            # Update scores and sort
-            for result, similarity in zip(results, similarities):
-                # Combine original score with reranking score
-                result['score'] = (result['score'] + similarity) / 2
-
-            # Sort by combined score
-            results.sort(key=lambda x: x['score'], reverse=True)
-            return results
-
+def rerank_results(self, query: str,
+       results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+"""Rerank results using semantic similarity."""
+    try:
+        from sentence_transformers import CrossEncoder
+        model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
         except Exception as e:
-            print(f"Warning: Reranking failed: {str(e)}")
-            return results  # Fall back to original ranking
+        print(f"Warning: Reranking model not available: {str(e)}")
+        return results
+        
+    try:
+        # Prepare pairs for reranking
+        pairs = [[query, result['text']] for result in results]
+        scores = model.predict(pairs)
+        
+        # Update scores
+        for i, result in enumerate(results):
+        result['score'] = float(scores[i])
+        
+        # Sort by new scores
+        results.sort(key=lambda x: x['score'], reverse=True)
+        return results
+    except Exception as e:
+        print(f"Warning: Reranking failed: {str(e)}")
+    return results
