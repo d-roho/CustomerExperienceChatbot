@@ -9,7 +9,7 @@ class VectorStore:
         self.api_key = api_key
         self.environment = environment
         self.index_name = index_name
-        self.dimension = 1536  # Claude embeddings dimension
+        self.dimension = 1536  # OpenAI ada-002 embedding dimension
 
         # Initialize Pinecone with new API
         try:

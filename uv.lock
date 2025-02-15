@@ -483,6 +483,25 @@ wheels = [
 ]
 
 [[package]]
+name = "openai"
+version = "1.63.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4f/32/2049e973a646801df425aecdf88c6504ca878bdb3951fe12076fc30f2977/openai-1.63.0.tar.gz", hash = "sha256:597d7a1b35b113e5a09fcb953bdb1eef44f404a39985f3d7573b3ab09221fd66", size = 356710 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/a0/e1fe4e87218639fc0a0927da5266c2978eaa0e2eb5437479ee64a11535bb/openai-1.63.0-py3-none-any.whl", hash = "sha256:a664dfc78f0a05ca46c3e21f344f840cf6bf7174f13cfa9de214ed28bfca1dda", size = 472282 },
+]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 source = { registry = "https://pypi.org/simple" }
@@ -852,6 +871,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "nltk" },
+    { name = "openai" },
     { name = "pinecone-client" },
     { name = "streamlit" },
 ]
@@ -860,6 +880,7 @@ dependencies = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.45.2" },
     { name = "nltk", specifier = ">=3.9.1" },
+    { name = "openai", specifier = ">=1.63.0" },
     { name = "pinecone-client", specifier = ">=5.0.1" },
     { name = "streamlit", specifier = ">=1.42.0" },
 ]
