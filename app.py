@@ -150,9 +150,11 @@ elif input_method == "Existing Vector Store":
     available_indexes = vector_store.pc.list_indexes().names()
 
     if available_indexes:
-        selected_index = st.selectbox("Select Vector Store",
-                                      available_indexes,
-                                      index=0)  # Default to the latest index)
+        selected_index = st.selectbox(
+            "Select Vector Store",
+            available_indexes,
+            index=available_indexes.index('reviews-index')
+            if 'reviews-index' in available_indexes else 0)
 
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
