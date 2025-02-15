@@ -172,42 +172,43 @@ if 'response' not in st.session_state:
 st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
-if query and query != st.session_state.last_query:
-    st.session_state.last_query = query
-    with st.spinner("Searching..."):
-        try:
-            # Search for relevant chunks
-            results = vector_store.search(query, llm_handler, top_k=top_k)
+if query:
+    if st.button("Search"):
+        st.session_state.last_query = query
+        with st.spinner("Searching..."):
+            try:
+                # Search for relevant chunks
+                results = vector_store.search(query, llm_handler, top_k=top_k)
 
-            # Rerank if enabled
-            if use_reranking and results:
-                results = vector_store.rerank_results(query, results)
+                # Rerank if enabled
+                if use_reranking and results:
+                    results = vector_store.rerank_results(query, results)
 
-            # Generate response
-            if results:
-                response = llm_handler.generate_response(query, results, model)
+                # Generate response
+                if results:
+                    response = llm_handler.generate_response(query, results, model)
 
-                # Display results
-                st.subheader("Generated Response")
-                st.code(response, language="text")
+                    # Display results
+                    st.subheader("Generated Response")
+                    st.code(response, language="text")
 
-                st.subheader("Relevant Reviews")
-                for i, result in enumerate(results, 1):
-                    with st.expander(
-                            f"Review {i} (Score: {result['score']:.4f})"):
-                        metadata = result.get('metadata', {})
-                        if metadata:
-                            metadata_text = f"""Location: {metadata.get('location', 'N/A')}
+                    st.subheader("Relevant Reviews")
+                    for i, result in enumerate(results, 1):
+                        with st.expander(
+                                f"Review {i} (Score: {result['score']:.4f})"):
+                            metadata = result.get('metadata', {})
+                            if metadata:
+                                metadata_text = f"""Location: {metadata.get('location', 'N/A')}
 City: {metadata.get('city', 'N/A')}
 Rating: {metadata.get('rating', 'N/A')}
 Date: {metadata.get('date', 'N/A')}"""
-                            st.code(metadata_text, language="text")
-                        st.code(f"Text: {result['text']}", language="text")
-            else:
-                st.warning("No relevant results found")
+                                st.code(metadata_text, language="text")
+                            st.code(f"Text: {result['text']}", language="text")
+                else:
+                    st.warning("No relevant results found")
 
-        except Exception as e:
-            st.error(f"Search failed: {str(e)}")
+            except Exception as e:
+                st.error(f"Search failed: {str(e)}")
 
 # Footer
 st.markdown("---")
