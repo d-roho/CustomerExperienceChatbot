@@ -138,7 +138,7 @@ if query and search_button and (query != st.session_state.last_query
             # Rerank if enabled
             if use_reranking:
                 st.session_state.results = vector_store.rerank_results(
-                    query, st.session_state.results, llm_handler)
+                    query, st.session_state.results)
             print(f'Reviews Reranked. Top 1: \n {st.session_state.results[0]}')
 
             # Generate response
@@ -153,13 +153,13 @@ if st.session_state.results and st.session_state.response:
     st.code(st.session_state.response)
 
     st.subheader("Relevant Passages")
-    
+
     # Combine all passages into a single block
     passages_text = "Retrieved Reviews:\n\n"
     for i, result in enumerate(st.session_state.results, 1):
         passages_text += f"Passage {i} (Score: {result['score']:.4f})\n"
         passages_text += f"{result['text']}\n\n"
-    
+
     st.code(passages_text)
 
 # Footer
