@@ -80,7 +80,17 @@ class VectorStore:
             for i in range(0, len(vectors), batch_size):
                 batch = vectors[i:i + batch_size]
                 current_batch = i//batch_size + 1
-                print(f"Upserting batch {current_batch}/{total_batches} ({len(batch)} vectors)")
+                print(f"\nUpserting batch {current_batch}/{total_batches} ({len(batch)} vectors)")
+                
+                # Print random chunk from this batch
+                from random import choice
+                random_id = int(choice(batch)[0])  # Get ID from random vector in batch
+                from replit import db
+                print(f"Random chunk from batch {current_batch}:")
+                print("-" * 50)
+                print(db.get(f"text_{random_id}"))
+                print("-" * 50)
+                
                 self.index.upsert(vectors=batch)
                 print(f"Batch {current_batch} complete - {i + len(batch)}/{len(vectors)} vectors processed")
             
