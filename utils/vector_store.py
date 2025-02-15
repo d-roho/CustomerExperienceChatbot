@@ -126,17 +126,28 @@ class VectorStore:
     def rerank_results(self, query: str, results: List[Dict[str, Any]], 
                       client: Anthropic) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity."""
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that evaluates the relevance of text passages to a query. Rate each passage's relevance from 0 to 1."
-            },
-            {
-                "role": "user",
-                "content": f"Query: {query}\n\nRate the relevance of each passage:\n" + 
-                          "\n".join([f"Passage {i+1}: {r['text']}" for i, r in enumerate(results)])
-            }
-        ]
+        try:
+            from sentence_transformers import CrossEncoder
+            model = CrossEncoder('jinaai/jina-colbert-v2', trust_remote_code=True)
+        except Exception as e:
+            print(f"Warning: Reranking model not available: {str(e)}")
+            return results
+
+        try:
+            # Prepare pairs for reranking
+            pairs = [[query, result['text']] for result in results]
+            scores = model.predict(pairs)
+
+            # Update scores
+            for i, result in enumerate(results):
+                result['score'] = float(scores[i])
+
+            # Sort by new scores
+            results.sort(key=lambda x: x['score'], reverse=True)
+            return results
+        except Exception as e:
+            print(f"Warning: Reranking failed: {str(e)}")
+            return results
 
         response = client.messages.create(
             model="claude-3-5-sonnet-20241022",
