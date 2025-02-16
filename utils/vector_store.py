@@ -103,8 +103,9 @@ class VectorStore:
                query: str,
                client: Anthropic,
                top_k: int = 5,
-               index_name: str = 'reviews_csv_main') -> List[Dict[str, Any]]:
+               index_name: str = 'reviews-csv-main') -> List[Dict[str, Any]]:
         """Search for similar texts using Pinecone and retrieve full texts from MotherDuck."""
+
         try:
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]

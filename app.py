@@ -159,7 +159,7 @@ elif input_method == "Existing Vector Store":
             vector_store.index = vector_store.pc.Index(selected_index)
             vector_store.index_name = selected_index
             st.success(f"Connected to index: {selected_index}")
-        index_name = selected_index
+        index_name = vector_store.index_name
     else:
         st.warning("No existing vector stores found")
 
