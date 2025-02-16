@@ -33,7 +33,10 @@ class TextProcessor:
             # Read CSV from bytes using BytesIO
             import io
             df = pd.read_csv(io.BytesIO(file_content))
-            df['id'] = [str(uuid.uuid4()) for _ in range(len(df.index))]
+            df['uuid'] = [
+                str(uuid.uuid4()).replace("-", "")
+                for _ in range(len(df.index))
+            ]
 
             # Ensure 'Text' column exists
             if 'Text' not in df.columns:
@@ -50,7 +53,7 @@ class TextProcessor:
                 # Create metadata dictionary
                 metadata = {
                     'id':
-                    row['id'],
+                    row['uuid'],
                     'city':
                     str(row.get('string_City', '')) if pd.notna(
                         row.get('string_City')) else '',

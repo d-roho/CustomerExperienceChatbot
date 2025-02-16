@@ -65,10 +65,10 @@ except Exception as e:
 
 # Sidebar controls
 st.sidebar.title("Parameters")
-chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
-chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
-top_k = st.sidebar.slider("Number of Results", 1, 10, 5)
-use_reranking = st.sidebar.checkbox("Use Reranking", False)
+# chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
+# chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
+top_k = st.sidebar.slider("Number of Reviews", 1, 10, 5)
+use_reranking = st.sidebar.checkbox("Use Reranking", True)
 
 # Main interface
 st.title("Review Analysis Pipeline")
@@ -192,25 +192,25 @@ if query:
 
                 # Generate response
                 if results:
-                    response = llm_handler.generate_response(
+                    response, context = llm_handler.generate_response(
                         query, results, model)
 
                     # Display results
                     st.subheader("Generated Response")
                     st.code(response, language="text")
 
-                    st.subheader("Relevant Reviews")
-                    reviews_text = ""
-                    for i, result in enumerate(results, 1):
-                        # metadata = result.get('metadata', {})
-                        reviews_text += f"Review {i} (Score: {result['score']:.4f})\n"
-                        # reviews_text += f"Location: {metadata.get('location', 'N/A')}\n"
-                        # reviews_text += f"City: {metadata.get('city', 'N/A')}\n"
-                        # reviews_text += f"Rating: {metadata.get('rating', 'N/A')}\n"
-                        # reviews_text += f"Date: {metadata.get('date', 'N/A')}\n"
-                        reviews_text += f"Text: {result['text']}\n"
-                        reviews_text += "-" * 80 + "\n"
-                    st.code(reviews_text, language="text")
+                    st.subheader("Context Used")
+                    # reviews_text = ""
+                    # for i, result in enumerate(results, 1):
+                    #     # metadata = result.get('metadata', {})
+                    #     reviews_text += f"Review {i} (Score: {result['score']:.4f})\n"
+                    #     # reviews_text += f"Location: {metadata.get('location', 'N/A')}\n"
+                    #     # reviews_text += f"City: {metadata.get('city', 'N/A')}\n"
+                    #     # reviews_text += f"Rating: {metadata.get('rating', 'N/A')}\n"
+                    #     # reviews_text += f"Date: {metadata.get('date', 'N/A')}\n"
+                    #     reviews_text += f"Text: {result['text']}\n"
+                    #     reviews_text += "-" * 80 + "\n"
+                    st.code(context, language="text")
                 else:
                     st.warning("No relevant results found")
 

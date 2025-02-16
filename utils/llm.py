@@ -21,21 +21,28 @@ class LLMHandler:
         self.openai = OpenAI(api_key=self.openai_key)
         self.model = None  # Will be set during generation
 
-    def generate_response(self, query: str, context: List[Dict[str, Any]], model: str) -> str:
+    def generate_response(self, query: str, context: List[Dict[str, Any]],
+                          model: str) -> str:
         """Generate a response using Claude."""
-        context_text = "\n".join([f" - {c['text']}" for c in context])
+        context_text = "\n".join([
+            f" Metadata: {c['metadata']} \n Review - {c['text']}"
+            for c in context
+        ])
 
         try:
             response = self.anthropic.messages.create(
                 model=model,
                 max_tokens=2000,
                 temperature=0,
-                system="You are a knowledgeable assistant. Use the provided context to answer questions accurately.",
+                system=
+                "You are a knowledgeable assistant. Use the provided context to answer questions accurately.",
                 messages=[{
-                    "role": "user",
-                    "content": f"Context:\n{context_text}\n\nQuestion: {query}"
+                    "role":
+                    "user",
+                    "content":
+                    f"Context:\n{context_text}\n\nQuestion: {query}"
                 }])
-            return response.content[0].text
+            return response.content[0].text, context_text
         except Exception as e:
             raise RuntimeError(f"Failed to generate response: {str(e)}")
 

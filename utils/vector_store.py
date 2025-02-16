@@ -113,7 +113,7 @@ class VectorStore:
             results = self.index.query(vector=query_embedding,
                                        top_k=top_k,
                                        include_metadata=True)
-            print(results.matches)
+            
             print(f"Successfully retrieved {len(results['matches'])} results")
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
