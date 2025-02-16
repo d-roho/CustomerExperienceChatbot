@@ -35,7 +35,6 @@ class TextProcessor:
             df = pd.read_csv(io.BytesIO(file_content))
             df['id'] = [str(uuid.uuid4()) for _ in range(len(df.index))]
 
-
             # Ensure 'Text' column exists
             if 'Text' not in df.columns:
                 raise ValueError("CSV must contain a 'Text' column")
@@ -65,8 +64,8 @@ class TextProcessor:
                     str(row.get('string_Place Location', 'QC')) if pd.notna(
                         row.get('string_Place Location')) else 'QC'
                 }
-
-                chunks.append({'text': text, 'metadata': metadata})
+                fulltext = f"City - {metadata['city']} Rating - {metadata['rating']} Date - {metadata['date']} Location - {metadata['location']} \n Review - {text}"
+                chunks.append({'text': fulltext, 'metadata': metadata})
             return chunks, df
 
         except Exception as e:

@@ -23,7 +23,7 @@ class LLMHandler:
 
     def generate_response(self, query: str, context: List[Dict[str, Any]], model: str) -> str:
         """Generate a response using Claude."""
-        context_text = "\n".join([f"- {c['text']}" for c in context])
+        context_text = "\n".join([f" - {c['text']}" for c in context])
 
         try:
             response = self.anthropic.messages.create(

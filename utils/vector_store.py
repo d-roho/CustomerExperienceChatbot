@@ -27,12 +27,12 @@ class VectorStore:
             if self.index_name not in self.pc.list_indexes().names():
                 print(f"Creating new index: {self.index_name}")
                 try:
-                    self.pc.create_index(
-                        name=self.index_name,
-                        dimension=self.dimension,
-                        metric='cosine',
-                        spec=ServerlessSpec(cloud='aws', region=self.environment)
-                    )
+                    self.pc.create_index(name=self.index_name,
+                                         dimension=self.dimension,
+                                         metric='cosine',
+                                         spec=ServerlessSpec(
+                                             cloud='aws',
+                                             region=self.environment))
                     print(f"Successfully created index: {self.index_name}")
                 except Exception as e:
                     raise RuntimeError(
@@ -45,7 +45,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to initialize Pinecone: {str(e)}")
 
     def upsert_texts(self, chunks: List[Dict[str, Any]], client: Anthropic,
-                     index_name: str, df) -> None:
+                     index_name, df) -> None:
         """Upload text chunks with metadata to Pinecone and MotherDuck."""
         try:
             print(f"\nStarting embedding process for {len(chunks)} chunks")
@@ -77,7 +77,8 @@ class VectorStore:
             batch_size = 100
             total_batches = (len(vectors) + batch_size - 1) // batch_size
             print(
-                f"\nStarting batch upload process ({total_batches} batches)...")
+                f"\nStarting batch upload process ({total_batches} batches)..."
+            )
 
             for i in range(0, len(vectors), batch_size):
                 batch = vectors[i:i + batch_size]
@@ -98,27 +99,34 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to upsert texts: {str(e)}")
 
-    def search(self, query: str, client: Anthropic, top_k: int = 5,
+    def search(self,
+               query: str,
+               client: Anthropic,
+               top_k: int = 5,
                index_name: str = 'reviews-csv-main') -> List[Dict[str, Any]]:
         """Search for similar texts using Pinecone and retrieve full texts from MotherDuck."""
+
         try:
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]
-
             print(f"Searching Pinecone with top_k={top_k}")
             results = self.index.query(vector=query_embedding,
-                                     top_k=top_k,
-                                     include_metadata=True)
-
+                                       top_k=top_k,
+                                       include_metadata=True)
+            print(results.matches)
+            print(f"Successfully retrieved {len(results['matches'])} results")
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
             for match in results.matches:
                 stored_data = self.db.get_chunk(match.id, index_name)
                 if stored_data:
                     processed_results.append({
-                        'text': stored_data['text'],
-                        'metadata': stored_data['metadata'],
-                        'score': match.score
+                        'text':
+                        stored_data['text'],
+                        'metadata':
+                        stored_data['metadata'],
+                        'score':
+                        match.score
                     })
 
             return processed_results
@@ -127,7 +135,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to search: {str(e)}")
 
     def rerank_results(self, query: str,
-                      results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                       results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity."""
         try:
             from sentence_transformers import CrossEncoder

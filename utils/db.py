@@ -37,14 +37,13 @@ class MotherDuckStore:
             # Create a temp view of the dataframe
             self.conn.register('temp_df', df)
 
-            
             self.conn.execute(f"""
-                DELETE TABLE IF EXISTS "{index_name}"
+                DROP TABLE IF EXISTS "{index_name}"
                 """)
 
             # Create the table from the temp view
             self.conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS "{index_name}" AS 
+                CREATE TABLE "{index_name}" AS 
                 SELECT * FROM temp_df
             """)
             self.conn.commit()
@@ -79,16 +78,17 @@ class MotherDuckStore:
     def get_chunk(self, chunk_id: str, index_name: str) -> Dict[str, Any]:
         """Retrieve a chunk by its ID."""
         try:
-            df = self.conn.execute("""
+            df = self.conn.execute(
+                """
                 SELECT * 
                 FROM "{}"
                 WHERE id = ?
             """.format(index_name), [chunk_id]).df()
-
+            text = "none"
+            metadata = "none"
             if not df.empty:
-                text = df['Text'].iloc[0]
+                text = df.iloc[0]['Text']
                 metadata = df.iloc[0, 1:].to_dict()
-                return {'text': text, 'metadata': metadata}
-            return {'text': '', 'metadata': {}}
+            return {'text': text, 'metadata': metadata}
         except Exception as e:
             raise RuntimeError(f"Failed to retrieve chunk: {str(e)}")

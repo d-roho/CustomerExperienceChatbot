@@ -37,15 +37,15 @@ def init_components() -> Tuple[LLMHandler, VectorStore]:
         environment: Optional[str] = os.environ.get('PINECONE_ENVIRONMENT')
 
         if not api_key or not environment:
-            st.error("Missing required Pinecone credentials. Please check your environment variables.")
+            st.error(
+                "Missing required Pinecone credentials. Please check your environment variables."
+            )
             st.stop()
 
         try:
-            vector_store = VectorStore(
-                api_key=api_key,
-                environment=environment,
-                index_name='reviews-index'
-            )
+            vector_store = VectorStore(api_key=api_key,
+                                       environment=environment,
+                                       index_name='reviews-csv-main')
             return llm_handler, vector_store
         except Exception as e:
             st.error(f"Failed to initialize Pinecone: {str(e)}")
@@ -96,7 +96,7 @@ if input_method == "File Upload":
                         dimension=vector_store.dimension,
                         metric='cosine',
                         spec=ServerlessSpec(cloud='aws',
-                                             region=vector_store.environment))
+                                            region=vector_store.environment))
                     st.success(f"Created new index: {index_name}")
                 vector_store.index = vector_store.pc.Index(index_name)
                 vector_store.index_name = index_name
@@ -158,8 +158,9 @@ elif input_method == "Existing Vector Store":
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
             vector_store.index_name = selected_index
+            index_name = vector_store.index_name
             st.success(f"Connected to index: {selected_index}")
-        index_name = vector_store.index_name
+
     else:
         st.warning("No existing vector stores found")
 
@@ -178,13 +179,12 @@ if query:
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
-                # Search for relevant chunks with better error handling
-                results = vector_store.search(
-                    query,
-                    llm_handler,
-                    top_k=top_k,
-                    index_name=index_name
-                )
+                # Search for relevant chunks
+                print(selected_index)
+                results = vector_store.search(query,
+                                              llm_handler,
+                                              top_k=top_k,
+                                              index_name=selected_index)
 
                 # Rerank if enabled
                 if use_reranking and results:
@@ -193,8 +193,7 @@ if query:
                 # Generate response
                 if results:
                     response = llm_handler.generate_response(
-                        query, results, model
-                    )
+                        query, results, model)
 
                     # Display results
                     st.subheader("Generated Response")
@@ -203,12 +202,12 @@ if query:
                     st.subheader("Relevant Reviews")
                     reviews_text = ""
                     for i, result in enumerate(results, 1):
-                        metadata = result.get('metadata', {})
+                        # metadata = result.get('metadata', {})
                         reviews_text += f"Review {i} (Score: {result['score']:.4f})\n"
-                        reviews_text += f"Location: {metadata.get('location', 'N/A')}\n"
-                        reviews_text += f"City: {metadata.get('city', 'N/A')}\n"
-                        reviews_text += f"Rating: {metadata.get('rating', 'N/A')}\n"
-                        reviews_text += f"Date: {metadata.get('date', 'N/A')}\n"
+                        # reviews_text += f"Location: {metadata.get('location', 'N/A')}\n"
+                        # reviews_text += f"City: {metadata.get('city', 'N/A')}\n"
+                        # reviews_text += f"Rating: {metadata.get('rating', 'N/A')}\n"
+                        # reviews_text += f"Date: {metadata.get('date', 'N/A')}\n"
                         reviews_text += f"Text: {result['text']}\n"
                         reviews_text += "-" * 80 + "\n"
                     st.code(reviews_text, language="text")
