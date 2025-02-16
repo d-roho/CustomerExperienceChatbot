@@ -110,8 +110,8 @@ if input_method == "File Upload":
         with st.spinner("Processing file..."):
             try:
                 # Initialize text processor
-                text_processor = TextProcessor(chunk_size=chunk_size,
-                                               chunk_overlap=chunk_overlap)
+                text_processor = TextProcessor(chunk_size=500,
+                                               chunk_overlap=50)
 
                 # Process file based on type
                 content = uploaded_file.read()
