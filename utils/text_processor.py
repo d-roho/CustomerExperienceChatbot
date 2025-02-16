@@ -33,7 +33,7 @@ class TextProcessor:
             # Read CSV from bytes using BytesIO
             import io
             df = pd.read_csv(io.BytesIO(file_content))
-            df['id'] = [uuid.uuid4() for _ in range(len(df.index))]
+            df['id'] = [str(uuid.uuid4()) for _ in range(len(df.index))]
 
 
             # Ensure 'Text' column exists
@@ -49,7 +49,6 @@ class TextProcessor:
                     continue
 
                 # Create metadata dictionary
-                id = str(uuid.uuid4())
                 metadata = {
                     'id':
                     row['id'],

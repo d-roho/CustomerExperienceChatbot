@@ -3,12 +3,15 @@ import duckdb
 from typing import Dict, Any, List
 import json
 
+
 class MotherDuckStore:
+
     def __init__(self):
         """Initialize MotherDuck connection."""
         motherduck_token = os.environ.get('MOTHERDUCK_TOKEN')
         if not motherduck_token:
-            raise ValueError("MOTHERDUCK_TOKEN environment variable is required")
+            raise ValueError(
+                "MOTHERDUCK_TOKEN environment variable is required")
 
         self.conn_str = f"md:reviews?token={motherduck_token}"
         self.conn = duckdb.connect(self.conn_str)
@@ -27,10 +30,17 @@ class MotherDuckStore:
         """Create tables using a given pandas dataframe."""
         try:
             # Clean column names: replace spaces and special chars with underscores
-            df.columns = [col.replace(' ', '_').replace('-', '_') for col in df.columns]
+            df.columns = [
+                col.replace(' ', '_').replace('-', '_') for col in df.columns
+            ]
 
             # Create a temp view of the dataframe
             self.conn.register('temp_df', df)
+
+            
+            self.conn.execute(f"""
+                DELETE TABLE IF EXISTS "{index_name}"
+                """)
 
             # Create the table from the temp view
             self.conn.execute(f"""
@@ -45,7 +55,8 @@ class MotherDuckStore:
         """Store a text chunk with its metadata."""
         try:
             metadata_json = json.dumps(metadata)
-            self.conn.execute("""
+            self.conn.execute(
+                """
                 INSERT INTO text_chunks (id, text, metadata)
                 VALUES (?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET
@@ -60,30 +71,25 @@ class MotherDuckStore:
         """Store multiple chunks in a batch."""
         try:
             for chunk in chunks:
-                self.store_chunk(
-                    chunk['metadata']['id'],
-                    chunk['text'],
-                    chunk['metadata']
-                )
+                self.store_chunk(chunk['metadata']['id'], chunk['text'],
+                                 chunk['metadata'])
         except Exception as e:
             raise RuntimeError(f"Failed to store chunks batch: {str(e)}")
 
     def get_chunk(self, chunk_id: str, index_name: str) -> Dict[str, Any]:
         """Retrieve a chunk by its ID."""
         try:
-            df = self.conn.execute("""
+            df = self.conn.execute(
+                f"""
                 SELECT * 
-                FROM "{}"
-                WHERE id = ?
-            """, [index_name, chunk_id]).df()
+                FROM "{index_name}"
+                WHERE id = "{chunk_id}"
+            """).df()
 
             if not df.empty:
                 text = df['Text'].iloc[0]
-                metadata = df.iloc[0,1:].to_dict()
-                return {
-                    'text': text,
-                    'metadata': metadata
-                }
+                metadata = df.iloc[0, 1:].to_dict()
+                return {'text': text, 'metadata': metadata}
             return {'text': '', 'metadata': {}}
         except Exception as e:
             raise RuntimeError(f"Failed to retrieve chunk: {str(e)}")
