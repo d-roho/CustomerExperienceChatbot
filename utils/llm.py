@@ -22,7 +22,7 @@ class LLMHandler:
         self.model = None  # Will be set during generation
 
     def generate_response(self, query: str, context: List[Dict[str, Any]],
-                          model: str) -> str:
+                          model: str, max_tokens: int = 2000) -> str:
         """Generate a response using Claude."""
         context_text = "\n".join([
             f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
@@ -32,7 +32,7 @@ class LLMHandler:
         try:
             response = self.anthropic.messages.create(
                 model=model,
-                max_tokens=2000,
+                max_tokens=max_tokens,
                 temperature=0,
                 system=
                 "You are a knowledgeable assistant. Use the provided context to answer questions accurately.",
