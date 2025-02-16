@@ -25,8 +25,8 @@ class LLMHandler:
                           model: str) -> str:
         """Generate a response using Claude."""
         context_text = "\n".join([
-            f" Metadata: {c['metadata']} \n Review - {c['text']}"
-            for c in context
+            f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+            for idx, c in enumerate(context)
         ])
 
         try:

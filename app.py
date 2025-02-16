@@ -85,7 +85,7 @@ if input_method == "File Upload":
     index_name = st.text_input("Enter Pinecone Index Name", "reviews-csv-test")
 
     process_button = st.button("Process File")
-    
+
     if uploaded_file and process_button:
         file_type = uploaded_file.name.split('.')[-1].lower()
 
@@ -96,7 +96,7 @@ if input_method == "File Upload":
                 if index_name in vector_store.pc.list_indexes().names():
                     vector_store.pc.delete_index(index_name)
                     st.info(f"Deleted existing index: {index_name}")
-                
+
                 # Create new index
                 vector_store.pc.create_index(
                     name=index_name,
@@ -159,7 +159,9 @@ elif input_method == "Existing Vector Store":
     available_indexes = vector_store.pc.list_indexes().names()
 
     if available_indexes:
-        default_index = available_indexes.index('reviews-csv-main') if 'reviews-csv-main' in available_indexes else 0
+        default_index = available_indexes.index(
+            'reviews-csv-test'
+        ) if 'reviews-csv-test' in available_indexes else 0
         selected_index = st.selectbox("Select Vector Store",
                                       available_indexes,
                                       index=default_index)

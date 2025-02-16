@@ -75,7 +75,9 @@ class TextProcessor:
                     str(row.get('string_State', '')) if pd.notna(
                         row.get('string_State')) else '',
                 }
-                fulltext = f"Location - {metadata['location']} Date - {metadata['date']} Rating - {metadata['rating']}/5.0 Upvotes {metadata['likes']}\n Review - {text}"
+                metadata[
+                    'header'] = f"Location - {metadata['location']}, Date - {metadata['date']}, Rating - {metadata['rating']}/5.0, Upvotes {metadata['likes']}"
+                fulltext = f"{metadata['header']}\n Review - {text}"
                 chunks.append({'text': fulltext, 'metadata': metadata})
             return chunks, df
 

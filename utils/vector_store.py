@@ -113,11 +113,12 @@ class VectorStore:
             results = self.index.query(vector=query_embedding,
                                        top_k=top_k,
                                        include_metadata=True)
-            
+
             print(f"Successfully retrieved {len(results['matches'])} results")
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
             for match in results.matches:
+                print(match)
                 stored_data = self.db.get_chunk(match.id, index_name)
                 if stored_data:
                     processed_results.append({
@@ -125,6 +126,8 @@ class VectorStore:
                         stored_data['text'],
                         'metadata':
                         stored_data['metadata'],
+                        'header':
+                        match.metadata['header'],
                         'score':
                         match.score
                     })
