@@ -9,13 +9,11 @@ class MotherDuckStore:
         motherduck_token = os.environ.get('MOTHERDUCK_TOKEN')
         if not motherduck_token:
             raise ValueError("MOTHERDUCK_TOKEN environment variable is required")
-        
+
         self.conn_str = f"md:reviews?token={motherduck_token}"
         self.conn = duckdb.connect(self.conn_str)
-        self._initialize_tables()
 
-    def _initialize_tables(self):
-        """Create tables if they don't exist."""
+        # Create text_chunks table if it doesn't exist
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS text_chunks (
                 id VARCHAR PRIMARY KEY,
@@ -25,6 +23,21 @@ class MotherDuckStore:
         """)
         self.conn.commit()
 
+    def create_table(self, index_name: str, df):
+        """Create tables using a given pandas dataframe."""
+        try:
+            # Create a temp view of the dataframe
+            self.conn.register('temp_df', df)
+
+            # Create the table from the temp view
+            self.conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {index_name} AS 
+                SELECT * FROM temp_df
+            """)
+            self.conn.commit()
+        except Exception as e:
+            raise RuntimeError(f"Failed to create table: {str(e)}")
+
     def store_chunk(self, chunk_id: str, text: str, metadata: Dict[str, Any]):
         """Store a text chunk with its metadata."""
         try:
@@ -32,7 +45,10 @@ class MotherDuckStore:
             self.conn.execute("""
                 INSERT INTO text_chunks (id, text, metadata)
                 VALUES (?, ?, ?)
-                """, [chunk_id, text, metadata_json])
+                ON CONFLICT (id) DO UPDATE SET
+                    text = EXCLUDED.text,
+                    metadata = EXCLUDED.metadata
+            """, [chunk_id, text, metadata_json])
             self.conn.commit()
         except Exception as e:
             raise RuntimeError(f"Failed to store chunk: {str(e)}")
@@ -57,13 +73,13 @@ class MotherDuckStore:
                 FROM text_chunks
                 WHERE id = ?
             """, [chunk_id]).fetchone()
-            
+
             if result:
                 text, metadata_json = result
                 return {
                     'text': text,
                     'metadata': json.loads(metadata_json)
                 }
-            return None
+            return {'text': '', 'metadata': {}}
         except Exception as e:
             raise RuntimeError(f"Failed to retrieve chunk: {str(e)}")

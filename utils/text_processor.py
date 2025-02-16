@@ -47,9 +47,10 @@ class TextProcessor:
                     continue
 
                 # Create metadata dictionary
+                id = str(uuid.uuid4())
                 metadata = {
                     'id':
-                    str(uuid.uuid4()),
+                    id,
                     'city':
                     str(row.get('string_City', '')) if pd.notna(
                         row.get('string_City')) else '',
@@ -66,7 +67,9 @@ class TextProcessor:
 
                 chunks.append({'text': text, 'metadata': metadata})
 
-            return chunks
+                row['id'] = id
+
+            return chunks, df
 
         except Exception as e:
             raise RuntimeError(f"Failed to process CSV file: {str(e)}")

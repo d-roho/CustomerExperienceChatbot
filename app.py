@@ -113,7 +113,7 @@ if input_method == "File Upload":
 
                 # Process file based on type
                 content = uploaded_file.read()
-                chunks = text_processor.process_file(content, file_type)
+                chunks, df = text_processor.process_file(content, file_type)
                 st.session_state.processed_chunks = chunks
 
                 # Display preview
@@ -136,7 +136,8 @@ if input_method == "File Upload":
 
                 # Store in vector database
                 try:
-                    vector_store.upsert_texts(chunks, llm_handler)
+                    vector_store.upsert_texts(chunks, llm_handler, index_name,
+                                              df)
                     st.success(f"Processed {len(chunks)} chunks from the file")
                 except Exception as e:
                     st.error(
@@ -158,6 +159,7 @@ elif input_method == "Existing Vector Store":
             vector_store.index = vector_store.pc.Index(selected_index)
             vector_store.index_name = selected_index
             st.success(f"Connected to index: {selected_index}")
+        index_name = selected_index
     else:
         st.warning("No existing vector stores found")
 
