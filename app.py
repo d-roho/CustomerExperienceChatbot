@@ -84,7 +84,9 @@ if input_method == "File Upload":
                                      type=['txt', 'csv'])
     index_name = st.text_input("Enter Pinecone Index Name", "reviews-csv-test")
 
-    if uploaded_file:
+    process_button = st.button("Process File")
+    
+    if uploaded_file and process_button:
         file_type = uploaded_file.name.split('.')[-1].lower()
 
         # Update vector store index
