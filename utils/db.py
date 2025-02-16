@@ -26,12 +26,15 @@ class MotherDuckStore:
     def create_table(self, index_name: str, df):
         """Create tables using a given pandas dataframe."""
         try:
+            # Clean column names: replace spaces and special chars with underscores
+            df.columns = [col.replace(' ', '_').replace('-', '_') for col in df.columns]
+
             # Create a temp view of the dataframe
             self.conn.register('temp_df', df)
 
             # Create the table from the temp view
             self.conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {index_name} AS 
+                CREATE TABLE IF NOT EXISTS "{index_name}" AS 
                 SELECT * FROM temp_df
             """)
             self.conn.commit()
