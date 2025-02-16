@@ -79,12 +79,11 @@ class MotherDuckStore:
     def get_chunk(self, chunk_id: str, index_name: str) -> Dict[str, Any]:
         """Retrieve a chunk by its ID."""
         try:
-            df = self.conn.execute(
-                f"""
+            df = self.conn.execute("""
                 SELECT * 
-                FROM "{index_name}"
-                WHERE id = "{chunk_id}"
-            """).df()
+                FROM "{}"
+                WHERE id = ?
+            """.format(index_name), [chunk_id]).df()
 
             if not df.empty:
                 text = df['Text'].iloc[0]
