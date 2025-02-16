@@ -33,6 +33,8 @@ class TextProcessor:
             # Read CSV from bytes using BytesIO
             import io
             df = pd.read_csv(io.BytesIO(file_content))
+            df['id'] = [uuid.uuid4() for _ in range(len(df.index))]
+
 
             # Ensure 'Text' column exists
             if 'Text' not in df.columns:
@@ -50,7 +52,7 @@ class TextProcessor:
                 id = str(uuid.uuid4())
                 metadata = {
                     'id':
-                    id,
+                    row['id'],
                     'city':
                     str(row.get('string_City', '')) if pd.notna(
                         row.get('string_City')) else '',
@@ -66,9 +68,6 @@ class TextProcessor:
                 }
 
                 chunks.append({'text': text, 'metadata': metadata})
-
-                row['id'] = id
-
             return chunks, df
 
         except Exception as e:

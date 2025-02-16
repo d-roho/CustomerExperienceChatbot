@@ -68,20 +68,21 @@ class MotherDuckStore:
         except Exception as e:
             raise RuntimeError(f"Failed to store chunks batch: {str(e)}")
 
-    def get_chunk(self, chunk_id: str) -> Dict[str, Any]:
+    def get_chunk(self, chunk_id: str, index_name: str) -> Dict[str, Any]:
         """Retrieve a chunk by its ID."""
         try:
-            result = self.conn.execute("""
-                SELECT text, metadata
-                FROM text_chunks
-                WHERE id = ?
-            """, [chunk_id]).fetchone()
+            df = self.conn.execute(f"""
+                SELECT * 
+                FROM {index_name}
+                WHERE id = {chunk_id}
+            """).df()
 
-            if result:
-                text, metadata_json = result
+            if ~df.empty:
+                text = df['Text']
+                metadata = df.iloc[0,1:].to_string(index=False)
                 return {
                     'text': text,
-                    'metadata': json.loads(metadata_json)
+                    'metadata': metadata
                 }
             return {'text': '', 'metadata': {}}
         except Exception as e:

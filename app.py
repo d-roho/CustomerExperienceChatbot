@@ -179,7 +179,10 @@ if query:
         with st.spinner("Searching..."):
             try:
                 # Search for relevant chunks
-                results = vector_store.search(query, llm_handler, top_k=top_k)
+                results = vector_store.search(query,
+                                              llm_handler,
+                                              top_k=top_k,
+                                              index_name=index_name)
 
                 # Rerank if enabled
                 if use_reranking and results:

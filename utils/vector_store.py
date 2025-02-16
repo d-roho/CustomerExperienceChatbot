@@ -1,11 +1,10 @@
 import re
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from pinecone import Pinecone, ServerlessSpec
 from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
-from utils.db import MotherDuckStore
-import pandas as pd
+from utils.db import MotherDuckStore  # New import
 
 
 class VectorStore:
@@ -29,11 +28,11 @@ class VectorStore:
                 print(f"Creating new index: {self.index_name}")
                 try:
                     self.pc.create_index(name=self.index_name,
-                                       dimension=self.dimension,
-                                       metric='cosine',
-                                       spec=ServerlessSpec(
-                                           cloud='aws',
-                                           region=self.environment))
+                                         dimension=self.dimension,
+                                         metric='cosine',
+                                         spec=ServerlessSpec(
+                                             cloud='aws',
+                                             region=self.environment))
                     print(f"Successfully created index: {self.index_name}")
                 except Exception as e:
                     raise RuntimeError(
@@ -46,7 +45,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to initialize Pinecone: {str(e)}")
 
     def upsert_texts(self, chunks: List[Dict[str, Any]], client: Anthropic,
-                     index_name: str, df: pd.DataFrame) -> None:
+                     index_name, df) -> None:
         """Upload text chunks with metadata to Pinecone and MotherDuck."""
         try:
             print(f"\nStarting embedding process for {len(chunks)} chunks")
@@ -65,7 +64,6 @@ class VectorStore:
             # Store texts in MotherDuck DB
             print("\nStoring texts in MotherDuck DB...")
             self.db.create_table(index_name, df)
-            self.db.store_chunks_batch(chunks)
             print("Successfully stored all chunks in MotherDuck")
 
             # Prepare vectors with metadata
@@ -79,7 +77,8 @@ class VectorStore:
             batch_size = 100
             total_batches = (len(vectors) + batch_size - 1) // batch_size
             print(
-                f"\nStarting batch upload process ({total_batches} batches)...")
+                f"\nStarting batch upload process ({total_batches} batches)..."
+            )
 
             for i in range(0, len(vectors), batch_size):
                 batch = vectors[i:i + batch_size]
@@ -103,7 +102,8 @@ class VectorStore:
     def search(self,
                query: str,
                client: Anthropic,
-               top_k: int = 5) -> List[Dict[str, Any]]:
+               top_k: int = 5,
+               index_name: str = 'reviews_csv_main') -> List[Dict[str, Any]]:
         """Search for similar texts using Pinecone and retrieve full texts from MotherDuck."""
         try:
             print(f"Getting embedding for query: {query[:50]}...")
@@ -111,18 +111,21 @@ class VectorStore:
 
             print(f"Searching Pinecone with top_k={top_k}")
             results = self.index.query(vector=query_embedding,
-                                     top_k=top_k,
-                                     include_metadata=True)
+                                       top_k=top_k,
+                                       include_metadata=True)
 
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
             for match in results.matches:
-                stored_data = self.db.get_chunk(match.id)
+                stored_data = self.db.get_chunk(match.id, index_name)
                 if stored_data:
                     processed_results.append({
-                        'text': stored_data['text'],
-                        'metadata': stored_data['metadata'],
-                        'score': match.score
+                        'text':
+                        stored_data['text'],
+                        'metadata':
+                        stored_data['metadata'],
+                        'score':
+                        match.score
                     })
 
             return processed_results
@@ -131,7 +134,7 @@ class VectorStore:
             raise RuntimeError(f"Failed to search: {str(e)}")
 
     def rerank_results(self, query: str,
-                      results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                       results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity."""
         try:
             from sentence_transformers import CrossEncoder
