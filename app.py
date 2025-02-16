@@ -159,9 +159,10 @@ elif input_method == "Existing Vector Store":
     available_indexes = vector_store.pc.list_indexes().names()
 
     if available_indexes:
+        default_index = available_indexes.index('reviews-csv-main') if 'reviews-csv-main' in available_indexes else 0
         selected_index = st.selectbox("Select Vector Store",
                                       available_indexes,
-                                      index=0)
+                                      index=default_index)
 
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
