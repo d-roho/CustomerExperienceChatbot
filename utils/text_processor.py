@@ -64,10 +64,18 @@ class TextProcessor:
                     str(row.get('date_Date Created', '')) if pd.notna(
                         row.get('date_Date Created')) else '',
                     'location':
-                    str(row.get('string_Place Location', 'QC')) if pd.notna(
-                        row.get('string_Place Location')) else 'QC'
+                    str(row.get('string_Place Location', '')) if pd.notna(
+                        row.get('string_Place Location')) else '',
+                    'likes':
+                    str(row.get('score_Count People Found Review Helpful', ''))
+                    if pd.notna(
+                        row.get('score_Count People Found Review Helpful'))
+                    else '',
+                    'state':
+                    str(row.get('string_State', '')) if pd.notna(
+                        row.get('string_State')) else '',
                 }
-                fulltext = f"City - {metadata['city']} Rating - {metadata['rating']} Date - {metadata['date']} Location - {metadata['location']} \n Review - {text}"
+                fulltext = f"Location - {metadata['location']} Date - {metadata['date']} Rating - {metadata['rating']}/5.0 Upvotes {metadata['likes']}\n Review - {text}"
                 chunks.append({'text': fulltext, 'metadata': metadata})
             return chunks, df
 

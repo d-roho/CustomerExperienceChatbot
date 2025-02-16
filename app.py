@@ -107,6 +107,7 @@ if input_method == "File Upload":
                 st.success(f"Created new index: {index_name}")
                 vector_store.index = vector_store.pc.Index(index_name)
                 vector_store.index_name = index_name
+                selected_index = index_name
             except Exception as e:
                 st.error(f"Failed to create/switch index: {str(e)}")
                 st.stop()
@@ -130,7 +131,7 @@ if input_method == "File Upload":
                         {
                             'text': chunk['text'],
                             'city': chunk['metadata'].get(
-                                'city', 'QC'),  #Quebec missing in dataset
+                                'location', ''),  #Quebec missing in dataset
                             'rating': chunk['metadata'].get('rating', ''),
                             'date': chunk['metadata'].get('date', '')
                         } for chunk in chunks[:5]
