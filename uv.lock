@@ -765,6 +765,16 @@ wheels = [
 ]
 
 [[package]]
+name = "luminoso-api"
+version = "3.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/11/7c/3a55935ecefc88def704d9901af44edecdf745325c269c08d3e94578340b/luminoso-api-3.1.1.tar.gz", hash = "sha256:2e2385fdde47655b08d7baf9dc56162c3e52c3c0a963eb8ba7c768856ab69555", size = 17852 }
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1648,6 +1658,7 @@ dependencies = [
     { name = "anthropic" },
     { name = "duckdb" },
     { name = "duckdb-engine" },
+    { name = "luminoso-api" },
     { name = "nltk" },
     { name = "openai" },
     { name = "pandas" },
@@ -1664,6 +1675,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.45.2" },
     { name = "duckdb", specifier = ">=1.2.0" },
     { name = "duckdb-engine", specifier = ">=0.15.0" },
+    { name = "luminoso-api", specifier = ">=3.1.1" },
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "openai", specifier = ">=1.63.0" },
     { name = "pandas", specifier = ">=2.2.3" },

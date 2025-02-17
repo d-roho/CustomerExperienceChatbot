@@ -7,6 +7,7 @@ dependencies = [
     "anthropic>=0.45.2",
     "duckdb>=1.2.0",
     "duckdb-engine>=0.15.0",
+    "luminoso-api>=3.1.1",
     "nltk>=3.9.1",
     "openai>=1.63.0",
     "pandas>=2.2.3",
