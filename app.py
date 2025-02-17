@@ -91,27 +91,26 @@ if input_method == "File Upload":
         file_type = uploaded_file.name.split('.')[-1].lower()
 
         # Update vector store index
-        if index_name != vector_store.index_name:
-            try:
-                # Delete index if it exists
-                if index_name in vector_store.pc.list_indexes().names():
-                    vector_store.pc.delete_index(index_name)
-                    st.info(f"Deleted existing index: {index_name}")
+        try:
+            # Delete index if it exists
+            if index_name in vector_store.pc.list_indexes().names():
+                vector_store.pc.delete_index(index_name)
+                st.info(f"Deleted existing index: {index_name}")
 
-                # Create new index
-                vector_store.pc.create_index(
-                    name=index_name,
-                    dimension=vector_store.dimension,
-                    metric='cosine',
-                    spec=ServerlessSpec(cloud='aws',
-                                        region=vector_store.environment))
-                st.success(f"Created new index: {index_name}")
-                vector_store.index = vector_store.pc.Index(index_name)
-                vector_store.index_name = index_name
-                selected_index = index_name
-            except Exception as e:
-                st.error(f"Failed to create/switch index: {str(e)}")
-                st.stop()
+            # Create new index
+            vector_store.pc.create_index(
+                name=index_name,
+                dimension=vector_store.dimension,
+                metric='cosine',
+                spec=ServerlessSpec(cloud='aws',
+                                    region=vector_store.environment))
+            st.success(f"Created new index: {index_name}")
+            vector_store.index = vector_store.pc.Index(index_name)
+            vector_store.index_name = index_name
+            selected_index = index_name
+        except Exception as e:
+            st.error(f"Failed to create/switch index: {str(e)}")
+            st.stop()
 
         # Process the file
         with st.spinner("Processing file..."):

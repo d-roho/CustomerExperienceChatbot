@@ -47,12 +47,17 @@ class TextProcessor:
             for _, row in df.iterrows():
                 # Clean the review text
                 text = self.clean_text(row['Text'])
+
+                # date
+                month = 1
+                year = 1
+                date_unix = 1
                 if not text:  # Skip empty texts
                     continue
 
                 # Create metadata dictionary
                 metadata = {
-                    'id':
+                    'uuid':
                     row['uuid'],
                     'city':
                     str(row.get('string_City', '')) if pd.notna(
@@ -60,9 +65,9 @@ class TextProcessor:
                     'rating':
                     float(row.get('score_Overall Rating', 0)) if pd.notna(
                         row.get('score_Overall Rating')) else 0.0,
-                    'date':
-                    str(row.get('date_Date Created', '')) if pd.notna(
-                        row.get('date_Date Created')) else '',
+                    'date_unix': date_unix
+                    'date_month': month
+                    'date_year': year
                     'location':
                     str(row.get('string_Place Location', '')) if pd.notna(
                         row.get('string_Place Location')) else '',

@@ -1,5 +1,5 @@
 Subtheme Extraction workflow
-- Structured Outputs
+- Final Output
 Finalize Preprocessing and Metadata Pinecone
 
 Tool 0 - LLM2Dict
