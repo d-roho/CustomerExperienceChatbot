@@ -5,7 +5,6 @@ from datetime import datetime
 import os
 import sys
 import itertools
-import time
 
 
 def process_review_with_llm(client, THEMES_LIST, review_text):
@@ -94,14 +93,8 @@ def main():
         'Online Shopping Experience': [],
         'Inventory & Cross-Channel Integration': []
     }
-    
-    max_retries = 3
-    retry_delay = 5  # seconds
-    
     for idx, row in df.iterrows():
         print(f"Processing review {idx + 1}/{len(df)}")
-        for attempt in range(max_retries):
-            try:
 
         THEMES_LIST = """ 
                     Exceptional Customer Service & Support
@@ -127,26 +120,12 @@ def main():
             for theme in raw_themes.values())
 
         # Add all JSON fields to the results
-                df.iloc[idx, -3] = str(raw_themes)
-                df.iloc[idx, -2] = themes
-                df.iloc[idx, -1] = subthemes
-                print(df.iloc[idx])
-                
-                # update theme master list
-                for theme in raw_themes.keys():
-                    if theme in master_themes:
-                        master_themes[theme].append(raw_themes[theme])
-                break  # Success - exit retry loop
-                
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(f"Attempt {attempt + 1} failed: {str(e)}")
-                    time.sleep(retry_delay)
-                else:
-                    print(f"All retries failed for review {idx + 1}: {str(e)}")
-                    df.iloc[idx, -3] = f"Failed: {str(e)}"
-                    df.iloc[idx, -2] = "Error"
-                    df.iloc[idx, -1] = "Error"
+        df.iloc[idx, -3] = str(raw_themes)
+        df.iloc[idx, -2] = themes
+        df.iloc[idx, -1] = subthemes
+        print(df.iloc[idx])
+
+        # update theme master list
         for theme in raw_themes.keys():
             if theme not in master_themes:
                 pass
