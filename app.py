@@ -8,7 +8,7 @@ import pandas as pd
 from pinecone import ServerlessSpec
 import json
 from utils.rag_workflow import process_query
-import asyncio
+
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -226,12 +226,12 @@ if query:
 
         lumin_class = LuminosoStats()
         lumin_client = lumin_class.initialize_client()
-
+        
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
-                    filter = json.load(file)
+                    filter = json.load(file)  
                 print(filter)
                 # Search for relevant chunks
                 print(selected_index)
@@ -258,14 +258,14 @@ if query:
         with st.spinner("Searching..."):
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
-                    filter = json.load(file)
+                    filter = json.load(file)  
                 print(filter)
                 # Search for relevant chunks
                 print(selected_index)
                 results = vector_store.filter_search(filter, query,
-                                                     llm_handler,
-                                                     top_k=top_k,
-                                                     index_name=selected_index)
+                                              llm_handler,
+                                              top_k=top_k,
+                                              index_name=selected_index)
 
                 # Rerank if enabled
                 if use_reranking and results:
@@ -289,31 +289,23 @@ if query:
                 st.error(f"Search failed: {str(e)}")
 
     if st.button("Agentic Search"):
-        st.session_state.last_query = query
+        st.session_state.last_query = query   
         with st.spinner("Processing analysis workflow..."):
             try:
-                # Run the async workflow
-                response = asyncio.run(process_query(query, llm_handler, vector_store))
+                response = process_query(query, llm_handler, vector_store)
 
-                # Display results
                 st.subheader("Analysis Results")
                 st.markdown(response['final_response'])
-
-                # Optional: Display intermediate results for debugging
-                with st.expander("View Analysis Details"):
-                    st.markdown("### Generated Filters")
-                    st.json(response['filters'])
-
-                    st.markdown("### Luminoso Analysis")
-                    st.dataframe(response['luminoso_results']['drivers'])
-                    st.dataframe(response['luminoso_results']['sentiment'])
-
-                    st.markdown("### Retrieved Reviews")
-                    st.json(response['vector_results'])
+                st.subheader("Workflow")
+                st.markdown(f"Query \n {response['query']}")
+                st.markdown(f"Generated Filter \n {response['filters']}")
+                st.markdown(f"Luminoso Data \n {response['luminoso_results']}")
+                st.markdown(f"Drivers Summary \n {response['drivers_summary']}")
+                st.markdown(f"Sentiment Summary \n {response['sentiment_summary']}")
+                st.markdown(f"Reviews Retrieved \n {response['vector_results'][:10000]}")
 
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
-                st.error("Please check the logs for more details.")
 
 # Footer
 st.markdown("---")

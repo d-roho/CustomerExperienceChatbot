@@ -99,7 +99,7 @@ class LuminosoStats:
                     try:
                         ms = filter[key][0]
                     except:
-                        ms = 0
+                        ms = 1
 
                     try:
                         ys = filter['year_start'][0]
@@ -311,7 +311,7 @@ class LuminosoStats:
                     try:
                         ms = filter[key][0]
                     except:
-                        ms = 0
+                        ms = 1
 
                     try:
                         ys = filter['year_start'][0]
