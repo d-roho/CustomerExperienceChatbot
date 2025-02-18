@@ -6,6 +6,7 @@ from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
 import pandas as pd
 from pinecone import ServerlessSpec
+from utils.workflow import process_query
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -211,22 +212,28 @@ if query:
                     st.code(response, language="text")
 
                     st.subheader("Context Used")
-                    # reviews_text = ""
-                    # for i, result in enumerate(results, 1):
-                    #     # metadata = result.get('metadata', {})
-                    #     reviews_text += f"Review {i} (Score: {result['score']:.4f})\n"
-                    #     # reviews_text += f"Location: {metadata.get('location', 'N/A')}\n"
-                    #     # reviews_text += f"City: {metadata.get('city', 'N/A')}\n"
-                    #     # reviews_text += f"Rating: {metadata.get('rating', 'N/A')}\n"
-                    #     # reviews_text += f"Date: {metadata.get('date', 'N/A')}\n"
-                    #     reviews_text += f"Text: {result['text']}\n"
-                    #     reviews_text += "-" * 80 + "\n"
                     st.code(context, language="text")
                 else:
                     st.warning("No relevant results found")
 
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
+
+# Add to existing code after query interface section
+st.header("Advanced Query Analysis")
+advanced_query = st.text_input("Enter your query for detailed analysis")
+
+if advanced_query:
+    if st.button("Analyze"):
+        with st.spinner("Processing analysis workflow..."):
+            try:
+                response = process_query(advanced_query, llm_handler, vector_store)
+
+                st.subheader("Analysis Results")
+                st.markdown(response)
+
+            except Exception as e:
+                st.error(f"Analysis failed: {str(e)}")
 
 # Footer
 st.markdown("---")
