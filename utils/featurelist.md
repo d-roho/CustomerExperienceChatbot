@@ -13,7 +13,7 @@ Node # 3 Standardization:
 
 Prompts and Testings/Auto Data Analysis
 
-DEMO
+DEMO - + Work + Slides + Replit 
 
 
 

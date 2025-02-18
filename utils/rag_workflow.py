@@ -1,4 +1,5 @@
 import langgraph.graph as lg
+from langgraph.graph import END, START, StateGraph, MessagesState
 from langgraph.prebuilt import ToolExecutor
 from typing import TypedDict, Annotated, Sequence, Dict, Any
 import json
@@ -146,43 +147,39 @@ async def generate_final_response(state: State,
         raise RuntimeError(f"Final response generation failed: {str(e)}")
 
 
-def create_workflow(llm_handler: LLMHandler, vector_store: Any):
+
+def create_workflow(llm_handler: LLMHandler, vector_store: VectorStore):
     """Create and return the workflow graph."""
-    # Create workflow
-    workflow = lg.Graph()
+    # Create state graph
+    workflow = lg.StateGraph(State)
 
     # Add nodes
-    workflow.add_node("generate_filters", generate_filters)
-    workflow.add_node("get_luminoso_stats", get_luminoso_stats)
-    workflow.add_node("get_vector_results", get_pinecone_results)
-    workflow.add_node("generate_final_response", generate_final_response)
+    workflow.add_node("generate_filters", lambda state: generate_filters(state, llm_handler))
+    workflow.add_node("get_luminoso_stats", lambda state: get_luminoso_stats(state))
+    workflow.add_node("get_vector_results", lambda state: get_pinecone_results(state, vector_store))
+    workflow.add_node("generate_final_response", lambda state: generate_final_response(state, llm_handler))
 
-    # Define edges
+    # Set entry point
+    workflow.add_edge(START, "generate_filters")
+
+    # Set conditional edges
     workflow.add_edge("generate_filters", "get_luminoso_stats")
     workflow.add_edge("generate_filters", "get_vector_results")
-    workflow.add_edge(("get_luminoso_stats", "get_vector_results"),
-                      "generate_final_response")
+    workflow.add_edge(("get_luminoso_stats", "get_vector_results"), "generate_final_response")
 
-    # Compile workflow
-    app = workflow.compile()
+    # Set end node
+    workflow.set_finish_point("generate_final_response")
 
-    return app
+    return workflow.compile()
 
-
-def process_query(query: str, llm_handler: LLMHandler,
-                  vector_store: Any) -> str:
+def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore) -> Dict:
     """Process a query through the workflow and return the final response."""
-    # Initialize workflow
     workflow = create_workflow(llm_handler, vector_store)
-
-    # Create initial state
-    initial_state = State(query=query,
-                          filters={},
-                          luminoso_results={},
-                          vector_results={},
-                          final_response="")
-
-    # Run workflow
-    final_state = workflow.invoke(initial_state)
-
-    return final_state
+    initial_state = State(
+        query=query,
+        filters={},
+        luminoso_results={},
+        vector_results={},
+        final_response=""
+    )
+    return workflow.invoke(initial_state)
