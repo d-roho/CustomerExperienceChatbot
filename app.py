@@ -67,7 +67,7 @@ except Exception as e:
 st.sidebar.title("Parameters")
 # chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 # chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
-top_k = st.sidebar.slider("Number of Reviews", 1, 10, 5)
+top_k = st.sidebar.slider("Number of Reviews", 1, 300, 5)
 use_reranking = st.sidebar.checkbox("Use Reranking", True)
 max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 2000)
 

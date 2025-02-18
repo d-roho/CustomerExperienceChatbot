@@ -149,7 +149,8 @@ class VectorStore:
 
         try:
             # Prepare pairs for reranking
-            pairs = [[query, result['text']] for result in results]
+            pairs = [[query, f"{result['header']}\n{result['text']}"]
+                     for result in results]
             scores = model.predict(pairs)
 
             # Update scores

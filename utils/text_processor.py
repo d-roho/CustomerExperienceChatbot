@@ -48,42 +48,68 @@ class TextProcessor:
                 # Clean the review text
                 text = self.clean_text(row['Text'])
 
-                # date
-                month = 1
-                year = 1
-                date_unix = 1
                 if not text:  # Skip empty texts
                     continue
+                # date
+                timestamp = pd.to_datetime(row['date_Date Created'])
+                month = timestamp.month  # No .dt needed for single Timestamp
+                year = timestamp.year    # No .dt needed for single Timestamp
+                date_unix = timestamp.timestamp()  # Directly get Unix timestamp
+
+
+                master_themes = [
+                    'Exceptional Customer Service & Support',
+                    'Poor Service & Long Wait Times',
+                    'Product Durability & Quality Issues',
+                    'Aesthetic Design & Visual Appeal',
+                    'Professional Piercing Services & Environment',
+                    'Piercing Complications & Jewelry Quality',
+                    'Store Ambiance & Try-On Experience',
+                    'Price & Policy Transparency',
+                    'Store Organization & Product Selection',
+                    'Complex Returns & Warranty Handling',
+                    'Communication & Policy Consistency',
+                    'Value & Price-Quality Assessment',
+                    'Affordable Luxury & Investment Value',
+                    'Online Shopping Experience',
+                    'Inventory & Cross-Channel Integration'
+                ]
+                row_themes = row['themes']
+
+                # Create metadata dictionary
+                # Helper functions for safe value extraction
+                def get_str(row, key, default=''):
+                    """Safely extract and convert string values from row"""
+                    val = row.get(key)
+                    return str(val) if pd.notna(val) else default
+
+                def get_float(row, key, default=0.0):
+                    """Safely extract and convert float values from row"""
+                    val = row.get(key)
+                    return float(val) if pd.notna(val) else default
 
                 # Create metadata dictionary
                 metadata = {
-                    'uuid':
-                    row['uuid'],
-                    'city':
-                    str(row.get('string_City', '')) if pd.notna(
-                        row.get('string_City')) else '',
-                    'rating':
-                    float(row.get('score_Overall Rating', 0)) if pd.notna(
-                        row.get('score_Overall Rating')) else 0.0,
-                    'date_unix': date_unix
-                    'date_month': month
-                    'date_year': year
-                    'location':
-                    str(row.get('string_Place Location', '')) if pd.notna(
-                        row.get('string_Place Location')) else '',
-                    'likes':
-                    str(row.get('score_Count People Found Review Helpful', ''))
-                    if pd.notna(
-                        row.get('score_Count People Found Review Helpful'))
-                    else '',
-                    'state':
-                    str(row.get('string_State', '')) if pd.notna(
-                        row.get('string_State')) else '',
+                    'id': row['uuid'],  # Assuming uuid is mandatory
+                    'city': get_str(row, 'string_City'),
+                    'rating': get_float(row, 'score_Overall Rating'),
+                    'date_unix': date_unix,
+                    'date_month': month,
+                    'date_year': year,
+                    'location': get_str(row, 'string_Place Location'),
+                    'likes': get_float(row, 'score_Count People Found Review Helpful'),
+                    'state': get_str(row, 'string_State'),
                 }
+                
+                for theme in master_themes:
+                    if theme in row_themes:
+                        metadata[theme] = True
+                        
                 metadata[
-                    'header'] = f"Location - {metadata['location']}, Date - {metadata['date']}, Rating - {metadata['rating']}/5.0, Upvotes {metadata['likes']}"
-                fulltext = f"{metadata['header']}\n Review - {text}"
-                chunks.append({'text': fulltext, 'metadata': metadata})
+                    'header'] = f"Location - {metadata['location']}, Date (MM/YYYY) - {metadata['date_month']}/{metadata['date_year']}, Rating - {metadata['rating']}/5.0, Upvotes {metadata['likes']}\nThemes - {row_themes}"
+                
+                # fulltext = f"{metadata['header']}\n Review - {text}"
+                chunks.append({'text': text, 'metadata': metadata})
             return chunks, df
 
         except Exception as e:

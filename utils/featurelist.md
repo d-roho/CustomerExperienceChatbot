@@ -1,6 +1,5 @@
-Subtheme Extraction workflow
-- Final Output
-Finalize Preprocessing and Metadata Pinecone
+Themes Daylight upload
+ - Compile into 
 
 Tool 0 - LLM2Dict
   - structured outputs

@@ -65,8 +65,7 @@ def main():
 
     # Read the CSV
     df = pd.read_csv(input_file)
-    df = df[299:] # testing limit
-    print(df.tail())
+    print(df.head())
     df['raw_tags'] = 'Failed'
     df['themes'] = ''
     df['subthemes'] = ''
@@ -93,25 +92,28 @@ def main():
         'Online Shopping Experience': [],
         'Inventory & Cross-Channel Integration': []
     }
+    THEMES_LIST = """ 
+    Exceptional Customer Service & Support
+    Poor Service & Long Wait Times
+    Product Durability & Quality Issues
+    Aesthetic Design & Visual Appeal
+    Professional Piercing Services & Environment
+    Piercing Complications & Jewelry Quality
+    Store Ambiance & Try-On Experience
+    Price & Policy Transparency
+    Store Organization & Product Selection
+    Complex Returns & Warranty Handling
+    Communication & Policy Consistency
+    Value & Price-Quality Assessment
+    Affordable Luxury & Investment Value
+    Online Shopping Experience
+    Inventory & Cross-Channel Integration """
+
     for idx, row in df.iterrows():
+        if idx < 725:
+            continue
         print(f"Processing review {idx + 1}/{len(df)}")
 
-        THEMES_LIST = """ 
-                    Exceptional Customer Service & Support
-                    Poor Service & Long Wait Times
-                    Product Durability & Quality Issues
-                    Aesthetic Design & Visual Appeal
-                    Professional Piercing Services & Environment
-                    Piercing Complications & Jewelry Quality
-                    Store Ambiance & Try-On Experience
-                    Price & Policy Transparency
-                    Store Organization & Product Selection
-                    Complex Returns & Warranty Handling
-                    Communication & Policy Consistency
-                    Value & Price-Quality Assessment
-                    Affordable Luxury & Investment Value
-                    Online Shopping Experience
-                    Inventory & Cross-Channel Integration """
         raw_themes = process_review_with_llm(client, THEMES_LIST, row['Text'])
         print(raw_themes)
         themes = ' | '.join(raw_themes.keys())
@@ -131,7 +133,7 @@ def main():
                 pass
             else:
                 master_themes[theme].append(raw_themes[theme])
-        if (idx + 1) % 100 == 0:
+        if idx % 25 == 0:
             with open(f"master_themes_{timestamp}.json", "w") as outfile:
                 json.dump(master_themes, outfile)
 
@@ -150,7 +152,7 @@ def main():
     with open(f"master_themes_final_{timestamp}.json", "w") as outfile:
         json.dump(master_themes, outfile)
 
-    output_file = f'reviews_tagged_{timestamp}.csv'
+    output_file = f'reviews_tagged_final_{timestamp}.csv'
 
     # Save to CSV
     df.to_csv(output_file, index=False)
