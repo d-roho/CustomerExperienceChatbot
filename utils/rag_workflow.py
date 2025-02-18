@@ -142,9 +142,10 @@ async def get_vector_results(state: State, vector_store: VectorStore, llm_handle
             index_name='reviews-csv-main'
         )
 
-        reranked_results = vector_store.rerank_results(results, state['query'])
-        state["vector_results"] = reranked_results
-        print(reranked_results)
+        state["vector_results"] = results
+        # reranked_results = vector_store.rerank_results(results, state['query'])
+        # state["vector_results"] = reranked_results
+        # print(reranked_results)
         return state
     except Exception as e:
         raise RuntimeError(f"Vector store search failed: {str(e)}")
@@ -167,18 +168,16 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
             temperature=0,
             system="""You are a helpful customer experience analysis expert that provides insights from aggregate ratings and sentiment data and customer reviews.
 
-            Provide a well-structured response that:
-            Intro:
-            A basic line to summarize the question and give a start to the answer. 
-            Keep it neutral and informative
-            Body: 
+            Provide a well-structured response that includes:
+            A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
+        
             Bullet points should be used wherever necessary
             Reference the source wherever using them to answer the question
             Use numbers and percentages when necessary
-            End: 
+    
             Summary of the answer in 2-3 lines emphasizing the most important points.
-            Suggested actions based on findings if necessary
-            Offer to help with any other question
+            Suggested actions based on findings and query if necessary
+            Provide potential follow up query to answer if necessary
             """,
             messages=[{
                 "role": "user",
