@@ -17,15 +17,39 @@ if 'last_query' not in st.session_state:
     st.session_state.last_query = None
 
 # Page configuration
-st.set_page_config(page_title="RAG Pipeline for Reviews", layout="wide")
-
-# Model selection in sidebar
-st.sidebar.title("Model Settings")
-model = st.sidebar.selectbox(
-    "Select Model",
-    ["claude-3-5-haiku-20241022", "claude-3-5-sonnet-20241022"],
-    index=1  # Default to Sonnet
+st.set_page_config(
+    page_title="RAG Pipeline for Reviews",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
+
+# Custom CSS
+st.markdown("""
+    <style>
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stMarkdown {
+        margin-bottom: 1rem;
+    }
+    div[data-testid="stSidebarNav"] {
+        background-color: #f8f9fa;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Main title with custom styling
+st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Review Analysis Pipeline</h1>", unsafe_allow_html=True)
+
+# Model selection in sidebar with improved styling
+with st.sidebar:
+    st.markdown("### Model Settings")
+    model = st.selectbox(
+        "Select Model",
+        ["claude-3-5-haiku-20241022", "claude-3-5-sonnet-20241022"],
+        index=1  # Default to Sonnet
+    )
 
 
 # Initialize components
@@ -66,13 +90,13 @@ except Exception as e:
     st.error(f"Application initialization failed: {str(e)}")
     st.stop()
 
-# Sidebar controls
-st.sidebar.title("Parameters")
-# chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
-# chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
-top_k = st.sidebar.slider("Number of Reviews", 1, 300, 5)
-use_reranking = st.sidebar.checkbox("Use Reranking", True)
-max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 2000)
+# Parameters section in sidebar with improved organization
+with st.sidebar:
+    st.markdown("### Analysis Parameters")
+    with st.container():
+        top_k = st.slider("Number of Reviews", 1, 300, 5)
+        use_reranking = st.checkbox("Use Reranking", True)
+        max_tokens = st.slider("Max Response Length (tokens)", 100, 4000, 2000)
 
 # Main interface
 st.title("Review Analysis Pipeline")
