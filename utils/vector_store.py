@@ -5,6 +5,8 @@ from anthropic import Anthropic
 from sentence_transformers import SentenceTransformer
 import torch
 from utils.db import MotherDuckStore  # New import
+import datetime
+
 
 
 class VectorStore:
@@ -136,6 +138,136 @@ class VectorStore:
 
         except Exception as e:
             raise RuntimeError(f"Failed to search: {str(e)}")
+
+    def filter_search(
+        self,
+        filters: Dict[str, Any],
+        query: str,
+        client: Anthropic,
+        top_k: int = 5,
+        index_name: str = 'reviews-csv-main',
+    ) -> List[Dict[str, Any]]:
+        """Search for similar texts using METADATA FILTERS."""
+
+        try:
+            print(f"Getting embedding for query: {query[:50]}...")
+            query_embedding = client.get_embeddings([query])[0]
+            print(f"Searching Pinecone with top_k={top_k}")
+
+            FIELD_MAPPING = {
+                'cities': 'city',
+                'states': 'state',
+                'month_start': 'date_month',
+                'year_start': 'date_year',
+                'month_end': 'date_month',
+                'year_end': 'date_year',
+                # 'themes': 'themes',
+                'rating_min': 'rating',
+                'rating_max': 'rating',
+                'location': 'location'
+                # subset of fields to search for
+            }
+            # SCALAR_FIELDS = {'month_start', 'year_start', 'month_end', 'year_end', 'rating_min', 'rating_min'}
+
+            filter_query = {}
+
+            # Handle special rating range case
+            rating_conditions = {}
+            if filters.get('rating_min'):
+                rating_conditions['$gte'] = filters['rating_min'][0]
+            if filters.get('rating_max'):
+                rating_conditions['$lte'] = filters['rating_max'][0]
+            if rating_conditions:
+                filter_query['rating'] = rating_conditions
+
+            # Handle special date range case
+            def get_unix_time(month, year):
+                # Create a datetime object for the first day of the given month and year
+                dt = datetime.datetime(year, month, 1, 0, 0, 0)
+
+                # Convert the datetime object to Unix time (seconds since January 1, 1970)
+                unix_time = int(dt.timestamp())
+                return unix_time
+          
+            
+            date_conditions = {}
+
+            
+            if filters.get('year_start'):
+                if filters.get('month_start'):
+                    start_unix = get_unix_time(filters['month_start'][0], filters['year_start'][0])
+                else:
+                    start_unix = get_unix_time(1, filters['year_start'][0])
+                date_conditions['$gte'] = start_unix
+
+            if filters.get('year_end'):
+                if filters.get('month_end'):
+                    end_unix = get_unix_time(filters['month_end'][0], filters['year_end'][0])
+                else:
+                    end_unix = get_unix_time(12, filters['year_end'][0])
+                date_conditions['$lte'] = end_unix
+
+            if date_conditions:
+                filter_query['date_unix'] = date_conditions
+
+            # Build filter query
+            for key in filters:
+                if key in ['rating_min', 'rating_max', 'subsets', 'month_start', 'year_start',
+                    'month_end','year_end']:
+                    continue  # Already handled or will handle later
+
+                values = filters[key]
+                if not values:
+                    continue  # Skip empty lists
+
+                if key in FIELD_MAPPING:
+                    mongo_field = FIELD_MAPPING[key]
+
+                    if key.lower() == 'themes':
+                        for theme in filters[key]:  
+                            filter_query[theme] = '{"$exists": true}'
+                    else:
+                        # Handle array values with $in
+                        filter_query[mongo_field] = {'$in': values}
+
+            # # Build projection
+            # projection = {}
+            # if 'subsets' in filters:
+            #     for field in filters['subsets']:
+            #         if field in FIELD_MAPPING:
+            #             projection[FIELD_MAPPING[field]] = 1
+            #     if filters['subsets']:  # Only exclude _id if we have subsets
+            #         projection['_id'] = 0
+
+            print(filter_query)
+            
+            results = self.index.query(vector=query_embedding,
+                                       top_k=top_k,
+                                       filter=filter_query,
+                                       include_metadata=True)
+
+            print(f"Successfully retrieved {len(results['matches'])} results")
+            # Retrieve full texts and metadata from MotherDuck
+            processed_results = []
+            for match in results.matches:
+                print(match)
+                stored_data = self.db.get_chunk(match.id, index_name)
+                if stored_data:
+                    processed_results.append({
+                        'text':
+                        stored_data['text'],
+                        'metadata':
+                        stored_data['metadata'],
+                        'header':
+                        match.metadata['header'],
+                        'score':
+                        match.score
+                    })
+
+            return processed_results
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to filter search: {str(e)}")
 
     def rerank_results(self, query: str,
                        results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

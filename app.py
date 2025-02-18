@@ -6,7 +6,9 @@ from utils.vector_store import VectorStore
 from utils.llm import LLMHandler
 import pandas as pd
 from pinecone import ServerlessSpec
-from utils.workflow import process_query
+import json
+from utils.rag_workflow import process_query
+
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -22,7 +24,7 @@ st.sidebar.title("Model Settings")
 model = st.sidebar.selectbox(
     "Select Model",
     ["claude-3-5-haiku-20241022", "claude-3-5-sonnet-20241022"],
-    index=0  # Default to Haiku
+    index=1  # Default to Sonnet
 )
 
 
@@ -161,8 +163,8 @@ elif input_method == "Existing Vector Store":
 
     if available_indexes:
         default_index = available_indexes.index(
-            'reviews-csv-test'
-        ) if 'reviews-csv-test' in available_indexes else 0
+            'reviews-csv-main'
+        ) if 'reviews-csv-main' in available_indexes else 0
         selected_index = st.selectbox("Select Vector Store",
                                       available_indexes,
                                       index=default_index)
@@ -219,18 +221,86 @@ if query:
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
 
-# Add to existing code after query interface section
-st.header("Advanced Query Analysis")
-advanced_query = st.text_input("Enter your query for detailed analysis")
+    if st.button("Luminoso Search"):
+        from utils.tools import LuminosoStats
 
-if advanced_query:
-    if st.button("Analyze"):
+        lumin_class = LuminosoStats()
+        lumin_client = lumin_class.initialize_client()
+        
+        st.session_state.last_query = query
+        with st.spinner("Searching..."):
+            try:
+                with open('attached_assets/test_filter.json', 'r') as file:
+                    filter = json.load(file)  
+                print(filter)
+                # Search for relevant chunks
+                print(selected_index)
+
+                # fetch drivers
+                drivers = lumin_class.fetch_drivers(lumin_client, filter)
+                sentiment = lumin_class.fetch_sentiment(lumin_client, filter)
+
+
+                # # Display results
+                st.subheader("Drivers")
+                st.dataframe(drivers)
+
+                st.subheader("Sentiment")
+                st.dataframe(sentiment)
+
+                st.success('Done')
+
+            except Exception as e:
+                st.error(f"Search failed: {str(e)}")
+
+    if st.button("Filter Search"):
+        st.session_state.last_query = query
+        with st.spinner("Searching..."):
+            try:
+                with open('attached_assets/test_filter.json', 'r') as file:
+                    filter = json.load(file)  
+                print(filter)
+                # Search for relevant chunks
+                print(selected_index)
+                results = vector_store.filter_search(filter, query,
+                                              llm_handler,
+                                              top_k=top_k,
+                                              index_name=selected_index)
+
+                # Rerank if enabled
+                if use_reranking and results:
+                    results = vector_store.rerank_results(query, results)
+
+                # Generate response
+                if results:
+                    response, context = llm_handler.generate_response(
+                        query, results, model, max_tokens=max_tokens)
+
+                    # Display results
+                    st.subheader("Generated Response")
+                    st.code(response, language="text")
+
+                    st.subheader("Context Used")
+                    st.code(context, language="text")
+                else:
+                    st.warning("No relevant results found")
+
+            except Exception as e:
+                st.error(f"Search failed: {str(e)}")
+
+    if st.button("Agentic Search"):
+        st.session_state.last_query = query   
         with st.spinner("Processing analysis workflow..."):
             try:
-                response = process_query(advanced_query, llm_handler, vector_store)
+                response = process_query(query, llm_handler, vector_store)
 
                 st.subheader("Analysis Results")
-                st.markdown(response)
+                st.markdown(response['final_response'])
+                st.subheader("Workflow")
+                st.markdown(f"Query \n {response['query']}")
+                st.markdown(f"Generated Filter \n {response['filters']}")
+                st.markdown(f"Luminoso Data \n {response['luminoso_results']}")
+                st.markdown(f"Reviews Retrieved \n {response['vector_results'][:10000]}")
 
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")

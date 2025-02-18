@@ -1,0 +1,42 @@
+{
+   "cities":[
+      "Chicago",
+      "New York",
+      "Los Angeles"
+   ],
+   "rating_min":[
+      
+   ],
+   "rating_max":[
+      
+   ],
+   "month_start":[
+      8
+   ],
+   "year_start":[
+      2024
+   ],
+   "month_end":[
+      12
+   ],
+   "year_end":[
+      2025
+   ],
+   "location":[
+      
+   ],
+   "states":[
+      "IL",
+      "NY",
+      "CA"
+   ],
+   "themes":[
+      "Exceptional Customer Service & Support",
+      "Store Ambiance & Try-On Experience",
+      "Product Durability & Quality Issues"
+   ],
+   "subsets":[
+      "cities",
+      "themes"
+   ]
+}
