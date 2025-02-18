@@ -292,7 +292,8 @@ if query:
         st.session_state.last_query = query   
         with st.spinner("Processing analysis workflow..."):
             try:
-                response = process_query(query, llm_handler, vector_store)
+                import asyncio
+                response = asyncio.run(process_query(query, llm_handler, vector_store))
 
                 st.subheader("Analysis Results")
                 st.markdown(response['final_response'])
@@ -300,7 +301,7 @@ if query:
                 st.markdown(f"Query \n {response['query']}")
                 st.markdown(f"Generated Filter \n {response['filters']}")
                 st.markdown(f"Luminoso Data \n {response['luminoso_results']}")
-                st.markdown(f"Drivers Summary \n {response['drivers_summary']}")
+                st.markdown(f"Driver Summary \n {response['driver_summary']}")
                 st.markdown(f"Sentiment Summary \n {response['sentiment_summary']}")
                 st.markdown(f"Reviews Retrieved \n {response['vector_results'][:10000]}")
 
