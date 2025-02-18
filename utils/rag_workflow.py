@@ -144,13 +144,23 @@ async def get_vector_results(state: State, vector_store: VectorStore, llm_handle
 
         reranked_results = vector_store.rerank_results(results, state['query'])
         state["vector_results"] = reranked_results
+        print(reranked_results)
         return state
     except Exception as e:
         raise RuntimeError(f"Vector store search failed: {str(e)}")
 
 async def generate_final_response(state: State, llm_handler: LLMHandler) -> State:
     """Generate final response combining all results."""
-    try:
+    try: 
+        reviews_text = []
+        for i in state['vector_results']:
+            reviews_text.append(i['text'])
+        context_text = reviews_text
+        # context_text = "\n".join([
+        #     f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+        #     for idx, c in enumerate(context)
+        # ])
+
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=2000,
@@ -182,7 +192,7 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
                 {state['sentiment_summary']}
 
                 Relevant Reviews:
-                {json.dumps(state['vector_results'], indent=2)}
+                {context_text}
                 """
             }])
 
