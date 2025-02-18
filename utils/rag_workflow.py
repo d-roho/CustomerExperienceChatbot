@@ -64,6 +64,7 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
                 "content": f"Query: {state['query']}"
             }])
         state["filters"] = json.loads(response.content[0].text)
+        print('Filters: ', state['filters'])
         return state
     except Exception as e:
         raise RuntimeError(f"Filter generation failed: {str(e)}")
