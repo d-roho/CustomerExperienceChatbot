@@ -292,7 +292,7 @@ if query:
         st.session_state.last_query = query   
         with st.spinner("Processing analysis workflow..."):
             try:
-                response = process_query(query, llm_handler, vector_store)
+                response = await process_query(query, llm_handler, vector_store)
 
                 st.subheader("Analysis Results")
                 st.markdown(response['final_response'])
