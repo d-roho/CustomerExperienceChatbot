@@ -262,6 +262,8 @@ async def generate_final_response(state: State,
                 }])
 
             state["reviews_summary"] = response.content[0].text
+            reviews_summary_time = time.time() - start_time
+            state["execution_times"]["reviews_summary_generation"] = reviews_summary_time
             context_text = response.content[0].text
             print(context_text)
 
