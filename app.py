@@ -243,83 +243,87 @@ col1, col2 = st.columns(2)
 
 with col2:
     # Cities
-    cities_list = ["Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
-                  "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
-                  "Miami", "Montreal", "Nashville", "New York", "North York",
-                  "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
-                  "Toronto", "Vancouver", "West Vancouver"]
-    select_all_cities = st.checkbox("Select All Cities", key="select_all_cities")
+    cities_list = [
+        "Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
+        "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
+        "Miami", "Montreal", "Nashville", "New York", "North York",
+        "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
+        "Toronto", "Vancouver", "West Vancouver"
+    ]
+    select_all_cities = st.checkbox("Select All Cities",
+                                    key="select_all_cities")
     selected_cities = st.multiselect(
         "Cities",
         cities_list,
         default=cities_list if select_all_cities else [],
-        key="cities_select"
-    )
+        key="cities_select")
 
     # States
-    states_list = ["NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", 
-                  "MD", "TN", "FL", "NJ", "CO"]
-    select_all_states = st.checkbox("Select All States", key="select_all_states")
+    states_list = [
+        "NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", "MD", "TN",
+        "FL", "NJ", "CO"
+    ]
+    select_all_states = st.checkbox("Select All States",
+                                    key="select_all_states")
     selected_states = st.multiselect(
         "States",
         states_list,
         default=states_list if select_all_states else [],
-        key="states_select"
-    )
+        key="states_select")
 
     # Locations
-    locations_list = ["43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
-                     "11700 Domain Blvd Suite 126, Austin, TX",
-                     "2166 W 4th Ave, Vancouver, BC, Canada",
-                     "126 Newbury St, Boston, MA",
-                     "1410 Peel St, Montreal, Quebec, Canada",
-                     "3401 Dufferin St, North York, ON, Canada",
-                     "940 W Randolph St, Chicago, IL, United States",
-                     "888 Westheimer Rd Suite 158, Houston, TX",
-                     "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
-                     "2621 NE University Village St, Seattle, WA",
-                     "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
-                     "1525 Walnut St, Philadelphia, PA",
-                     "7247 Woodmont Ave, Bethesda, MD",
-                     "64 Ossington Ave, Toronto, ON, Canada",
-                     "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
-                     "925 Main St Unit H3, West Vancouver, BC, Canada",
-                     "124 Bellevue Square Unit L124, Bellevue, WA",
-                     "1200 Morris Tpke, Short Hills, NJ, United States",
-                     "3000 E 1st Ave #144, Denver, CO",
-                     "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
-                     "737 Dunsmuir St, Vancouver, BC, Canada",
-                     "27 Boylston St, Chestnut Hill, MA"]
-    select_all_locations = st.checkbox("Select All Locations", key="select_all_locations")
+    locations_list = [
+        "43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
+        "11700 Domain Blvd Suite 126, Austin, TX",
+        "2166 W 4th Ave, Vancouver, BC, Canada", "126 Newbury St, Boston, MA",
+        "1410 Peel St, Montreal, Quebec, Canada",
+        "3401 Dufferin St, North York, ON, Canada",
+        "940 W Randolph St, Chicago, IL, United States",
+        "888 Westheimer Rd Suite 158, Houston, TX",
+        "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
+        "2621 NE University Village St, Seattle, WA",
+        "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
+        "1525 Walnut St, Philadelphia, PA", "7247 Woodmont Ave, Bethesda, MD",
+        "64 Ossington Ave, Toronto, ON, Canada",
+        "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
+        "925 Main St Unit H3, West Vancouver, BC, Canada",
+        "124 Bellevue Square Unit L124, Bellevue, WA",
+        "1200 Morris Tpke, Short Hills, NJ, United States",
+        "3000 E 1st Ave #144, Denver, CO",
+        "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
+        "737 Dunsmuir St, Vancouver, BC, Canada",
+        "27 Boylston St, Chestnut Hill, MA"
+    ]
+    select_all_locations = st.checkbox("Select All Locations",
+                                       key="select_all_locations")
     selected_location = st.multiselect(
         "Select Store Locations",
         locations_list,
         default=locations_list if select_all_locations else [],
-        key="location_select"
-    )
+        key="location_select")
 
     # Themes
-    themes_list = ["Exceptional Customer Service & Support",
-                  "Poor Service & Long Wait Times",
-                  "Product Durability & Quality Issues",
-                  "Aesthetic Design & Visual Appeal",
-                  "Professional Piercing Services & Environment",
-                  "Store Ambiance & Try-On Experience",
-                  "Price & Policy Transparency",
-                  "Store Organization & Product Selection",
-                  "Complex Returns & Warranty Handling",
-                  "Communication & Policy Consistency",
-                  "Value & Price-Quality Assessment",
-                  "Affordable Luxury & Investment Value",
-                  "Online Shopping Experience",
-                  "Inventory & Cross-Channel Integration"]
-    select_all_themes = st.checkbox("Select All Themes", key="select_all_themes")
+    themes_list = [
+        "Exceptional Customer Service & Support",
+        "Poor Service & Long Wait Times",
+        "Product Durability & Quality Issues",
+        "Aesthetic Design & Visual Appeal",
+        "Professional Piercing Services & Environment",
+        "Store Ambiance & Try-On Experience", "Price & Policy Transparency",
+        "Store Organization & Product Selection",
+        "Complex Returns & Warranty Handling",
+        "Communication & Policy Consistency",
+        "Value & Price-Quality Assessment",
+        "Affordable Luxury & Investment Value", "Online Shopping Experience",
+        "Inventory & Cross-Channel Integration"
+    ]
+    select_all_themes = st.checkbox("Select All Themes",
+                                    key="select_all_themes")
     selected_themes = st.multiselect(
         "Select Themes",
         themes_list,
         default=themes_list if select_all_themes else [],
-        key="themes_select"
-    )
+        key="themes_select")
 
 with col1:
     start_month = st.number_input("Start Month",
@@ -355,24 +359,21 @@ with col1:
                                  key="max_rating")
 
 selected_tool = st.selectbox(
-    "Select Tool", ["Luminoso Stats API", "Basic RAG Search", "Metadata Filter RAG Search"],
+    "Select Tool",
+    ["Luminoso Stats API", "Basic RAG Search", "Metadata Filter RAG Search"],
     index=0)
 if selected_tool == "Luminoso Stats API":
 
     if st.button("Fetch Stats", key="fetch_stats"):
         filter_params = {
-            "cities":
-            selected_cities,
-            "states":
-            selected_states,
-            "themes":
-            selected_themes,
+            "cities": selected_cities,
+            "states": selected_states,
+            "themes": selected_themes,
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],
-            "year_end": [end_year]
-            
-            if selected_cities and selected_themes else []
+            "year_end":
+            [end_year] if selected_cities and selected_themes else []
         }
 
         lumin_class = LuminosoStats()
@@ -419,14 +420,14 @@ if selected_tool == "Luminoso Stats API":
 elif selected_tool == "Basic RAG Search":
     query_basic = st.text_input("Enter the query")
     if st.button("Retrieve Reviews", key="retrieve_reviews"):
-        
+
         with st.spinner("Searching..."):
             try:
                 start_time = time.time()  #Start timer
                 results = vector_store.search(query_basic,
-                                                         llm_handler,
-                                                         top_k=top_k,
-                                                         index_name=selected_index)
+                                              llm_handler,
+                                              top_k=top_k,
+                                              index_name=selected_index)
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
                 # Rerank if enabled
@@ -434,7 +435,8 @@ elif selected_tool == "Basic RAG Search":
                 rerank_execution_time = 0
                 if use_reranking and results:
                     results = vector_store.rerank_results(query_basic, results)
-                    rerank_execution_time = time.time() - rerank_time  #Stop timer
+                    rerank_execution_time = time.time(
+                    ) - rerank_time  #Stop timer
 
                 # Generate response
                 if results:
@@ -448,7 +450,9 @@ elif selected_tool == "Basic RAG Search":
                     )
                     st.code(response, language="text")
 
-                    st.subheader(f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s")
+                    st.subheader(
+                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s"
+                    )
                     st.code(context, language="text")
                 else:
                     st.warning("No relevant results found")
@@ -456,23 +460,18 @@ elif selected_tool == "Basic RAG Search":
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
 
-
 elif selected_tool == "Metadata Filter RAG Search":
     query_filter = st.text_input("Enter the query")
     if st.button("Retrieve Reviews", key="retrieve_reviews"):
         filter_params = {
-            "cities":
-            selected_cities,
-            "states":
-            selected_states,
-            "themes":
-            selected_themes,
+            "cities": selected_cities,
+            "states": selected_states,
+            "themes": selected_themes,
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],
-            "year_end": [end_year]
-
-            if selected_cities and selected_themes else []
+            "year_end":
+            [end_year] if selected_cities and selected_themes else []
         }
 
         with st.spinner("Searching..."):
@@ -480,39 +479,41 @@ elif selected_tool == "Metadata Filter RAG Search":
                 start_time = time.time()  #Start timer
                 results = vector_store.filter_search(filter_params,
                                                      query_filter,
-                                                         llm_handler,
-                                                         top_k=top_k,
-                                                         index_name=selected_index)
+                                                     llm_handler,
+                                                     top_k=top_k,
+                                                     index_name=selected_index)
                 pinecone_execution_time = time.time() - start_time  #Stop timer
-        
+
                 # Rerank if enabled
                 rerank_time = time.time()  #Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    results = vector_store.rerank_results(query_filter, results)
-                    rerank_execution_time = time.time() - rerank_time  #Stop timer
-    
+                    results = vector_store.rerank_results(
+                        query_filter, results)
+                    rerank_execution_time = time.time(
+                    ) - rerank_time  #Stop timer
+
                 # Generate response
                 if results:
                     response, context = llm_handler.generate_response(
                         query_filter, results, model, max_tokens=max_tokens)
-    
+
                     # Display results
                     execution_time = time.time() - start_time  #Stop timer
                     st.subheader(
                         f"Generated Response (Execution time: {execution_time:.2f}s)"
                     )
                     st.code(response, language="text")
-    
-                    st.subheader(f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s")
+
+                    st.subheader(
+                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s"
+                    )
                     st.code(context, language="text")
                 else:
                     st.warning("No relevant results found")
-        
+
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
-    
-
 
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
@@ -526,19 +527,32 @@ if st.button("Run Workflow"):
             import asyncio
             if lite:
                 response = asyncio.run(
-                    process_query_lite(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
+                    process_query_lite(query,
+                                       llm_handler,
+                                       vector_store,
+                                       top_k=top_k,
+                                       max_tokens=max_tokens,
+                                       model=model,
+                                       reranking=use_reranking))
                 lite_execution = 1
             else:
                 response = asyncio.run(
-                    process_query(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
-    
+                    process_query(query,
+                                  llm_handler,
+                                  vector_store,
+                                  top_k=top_k,
+                                  max_tokens=max_tokens,
+                                  model=model,
+                                  reranking=use_reranking))
+
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
                 st.subheader(f"Execution Times (Lite: {lite_execution == 1})")
                 for step, duration in response['execution_times'].items():
-                    st.metric(f"{step.replace('_', ' ').title()}", f"{duration:.2f}s")
-                    
+                    st.metric(f"{step.replace('_', ' ').title()}",
+                              f"{duration:.2f}s")
+
                 st.subheader(f"Query: \n {response['query']}")
                 st.subheader(f"Generated Filter: \n")
                 st.json(response['filters'], expanded=True)
@@ -552,11 +566,9 @@ if st.button("Run Workflow"):
                 st.markdown(response['sentiment_summary'])
 
             with st.expander(
-                    f"{len(response['vector_results'])} Reviews Retrieved"
-            ):
+                    f"{len(response['vector_results'])} Reviews Retrieved"):
                 st.subheader(f"Total Reviews : \n Query:{response['query']}")
-                for i, curr_rev in enumerate(
-                        response['vector_results'][:50]):
+                for i, curr_rev in enumerate(response['vector_results'][:50]):
                     st.markdown(
                         f"Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
                     )

@@ -5,6 +5,8 @@ import json
 from utils.llm import LLMHandler
 from utils.vector_store import VectorStore
 from utils.tools import LuminosoStats
+import time
+
 
 class State(TypedDict):
     query: str
@@ -18,6 +20,7 @@ class State(TypedDict):
     model: str
     execution_times: Dict[str, float]
 
+
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     """Generate filters based on user query using Claude."""
     try:
@@ -25,7 +28,8 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
             model='claude-3-5-sonnet-20241022',
             max_tokens=2000,
             temperature=0,
-            system="""Extract metadata from the query in the following format. Return only valid JSON
+            system=
+            """Extract metadata from the query in the following format. Return only valid JSON
 
         {'cities': [] ,
         'rating_min': [],
@@ -63,9 +67,12 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     except Exception as e:
         raise RuntimeError(f"Filter generation failed: {str(e)}")
 
-async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1, summaries: 1) -> State:
+
+async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
+                             summaries: 1) -> State:
     """Get statistics from Luminoso API based on filters."""
     try:
+        luminoso_start = time.time()
         luminoso_stats = LuminosoStats()
         client = luminoso_stats.initialize_client()
 
@@ -75,16 +82,17 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1, su
             filter['themes'] = []
             drivers = luminoso_stats.fetch_drivers(client, filter)
             sentiment = luminoso_stats.fetch_sentiment(client, filter)
-            
+
         else:
             # Get both drivers and sentiment analysis
             drivers = luminoso_stats.fetch_drivers(client, state["filters"])
-            sentiment = luminoso_stats.fetch_sentiment(client, state["filters"])
-    
+            sentiment = luminoso_stats.fetch_sentiment(client,
+                                                       state["filters"])
+
         state["luminoso_results"] = {
             "drivers": drivers.to_dict(),
             "sentiment": sentiment.to_dict()
-}
+        }
 
         if summaries == 1:
             response = llm_handler.anthropic.messages.create(
@@ -108,12 +116,14 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1, su
     
             """,
                 messages=[{
-                    "role": "user",
-                    "content": f"User Query: {state['query']} \n Drivers Dataset {json.dumps(state['luminoso_results']['drivers'], indent=2)}"
-                    }])
-    
+                    "role":
+                    "user",
+                    "content":
+                    f"User Query: {state['query']} \n Drivers Dataset {json.dumps(state['luminoso_results']['drivers'], indent=2)}"
+                }])
+
             state["driver_summary"] = response.content[0].text
-    
+
             response = llm_handler.anthropic.messages.create(
                 model='claude-3-5-sonnet-20241022',
                 max_tokens=2000,
@@ -132,22 +142,27 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1, su
                 Proportion of NEgative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)s
             """,
                 messages=[{
-                    "role": "user",
-                    "content": f"User Query: {state['query']} \n Sentiment Dataset {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
-                    }])
-    
+                    "role":
+                    "user",
+                    "content":
+                    f"User Query: {state['query']} \n Sentiment Dataset {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
+                }])
+
             print(response.content[0].text)
             state["sentiment_summary"] = response.content[0].text
         else:
             state["driver_summary"] = drivers.to_markdown()
             state["driver_summary"] = sentiment.to_markdown()
 
-
+        state["execution_times"]["luminoso_stats"] = time.time(
+        ) - luminoso_start
         return state
     except Exception as e:
         raise RuntimeError(f"Luminoso stats retrieval failed: {str(e)}")
 
-async def get_vector_results(state: State, vector_store: VectorStore, llm_handler: LLMHandler, top_k: int) -> State:
+
+async def get_vector_results(state: State, vector_store: VectorStore,
+                             llm_handler: LLMHandler, top_k: int, reranking: int = 1) -> State:
     """Get relevant reviews from vector store based on filters."""
     try:
         results = vector_store.filter_search(
@@ -155,20 +170,23 @@ async def get_vector_results(state: State, vector_store: VectorStore, llm_handle
             state['query'],
             llm_handler,
             top_k=top_k,  # Default value, can be made configurable
-            index_name='reviews-csv-main'
-        )
+            index_name='reviews-csv-main')
 
         state["vector_results"] = results
-        # reranked_results = vector_store.rerank_results(results, state['query'])
-        # state["vector_results"] = reranked_results
-        # print(reranked_results)
+        if reranking == 1:
+            reranked_results = vector_store.rerank_results(results, state['query'])
+            state["vector_results"] = reranked_results
+            print(reranked_results)
         return state
     except Exception as e:
         raise RuntimeError(f"Vector store search failed: {str(e)}")
 
-async def generate_final_response(state: State, llm_handler: LLMHandler) -> State:
+
+async def generate_final_response(state: State,
+                                  llm_handler: LLMHandler) -> State:
     """Generate final response combining all results."""
-    try: 
+    try:
+        vector_start = time.time()
         # reviews_text = []
         # for i in state['vector_results']:
         #     reviews_text.append(i['text'])
@@ -179,9 +197,11 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
 
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
-            max_tokens=state.get('max_tokens', 2000), # Updated to use max_tokens from state
+            max_tokens=state.get('max_tokens',
+                                 2000),  # Updated to use max_tokens from state
             temperature=0,
-            system="""You are a helpful customer experience analysis expert that provides insights from aggregate ratings and sentiment data and customer reviews.
+            system=
+            """You are a helpful customer experience analysis expert that provides insights from aggregate ratings and sentiment data and customer reviews.
 
             Provide a well-structured response that includes:
             A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
@@ -195,8 +215,10 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
             Provide potential follow up query to answer if necessary
             """,
             messages=[{
-                "role": "user",
-                "content": f"""
+                "role":
+                "user",
+                "content":
+                f"""
                 User Query: {state['query']}
 
                 Drivers Data Analysis:
@@ -211,47 +233,56 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
             }])
 
         state["final_response"] = response.content[0].text
+        state["execution_times"]["vector_search"] = time.time() - vector_start
+
         return state
     except Exception as e:
         raise RuntimeError(f"Final response generation failed: {str(e)}")
 
-async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000, model: str = "claude-3-5-sonnet-20241022") -> Dict:
+
+async def process_query(query: str,
+                        llm_handler: LLMHandler,
+                        vector_store: VectorStore,
+                        top_k: int = 300,
+                        max_tokens: int = 2000,
+                        model: str = "claude-3-5-sonnet-20241022", reranking: int = 1) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
         workflow_start = time.time()
-        
+
         # Initialize state
-        state = State(
-            query=query,
-            filters={},
-            luminoso_results={},
-            vector_results={},
-            final_response="",
-            driver_summary="",
-            sentiment_summary="",
-            max_tokens=max_tokens,
-            model=model,
-            execution_times={}
-        )
+        state = State(query=query,
+                      filters={},
+                      luminoso_results={},
+                      vector_results={},
+                      final_response="",
+                      driver_summary="",
+                      sentiment_summary="",
+                      max_tokens=max_tokens,
+                      model=model,
+                      execution_times={})
 
         # Step 1: Generate filters
         filter_start = time.time()
         state = await generate_filters(state, llm_handler)
-        state["execution_times"]["filter_generation"] = time.time() - filter_start
+        state["execution_times"]["filter_generation"] = time.time(
+        ) - filter_start
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
-        luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler))
-        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=top_k))
+        luminoso_task = asyncio.create_task(
+            get_luminoso_stats(state, llm_handler))
+        vector_task = asyncio.create_task(
+            get_vector_results(state, vector_store, llm_handler, top_k=top_k, reranking = reranking))
 
         # Wait for both tasks to complete
         parallel_start = time.time()
         results = await asyncio.gather(luminoso_task, vector_task)
         parallel_time = time.time() - parallel_start
-        
+
         # Record execution times
         state["execution_times"]["parallel_tasks"] = parallel_time
-        
+
         # Merge results back into state
         state["luminoso_results"] = results[0]["luminoso_results"]
         state["vector_results"] = results[1]["vector_results"]
@@ -259,43 +290,57 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
         # Step 4: Generate final response
         final_response_start = time.time()
         state = await generate_final_response(state, llm_handler)
-        state["execution_times"]["final_response"] = time.time() - final_response_start
-        
+        state["execution_times"]["final_response"] = time.time(
+        ) - final_response_start
+
         # Record total workflow time
-        state["execution_times"]["total_workflow"] = time.time() - workflow_start
+        state["execution_times"]["total_workflow"] = time.time(
+        ) - workflow_start
 
         return state
     except Exception as e:
         raise RuntimeError(f"Query processing failed: {str(e)}")
 
-async def process_query_lite(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000, model: str = "claude-3-5-sonnet-20241022", themes: int = 0, summaries: int = 1) -> Dict:
+
+async def process_query_lite(query: str,
+                             llm_handler: LLMHandler,
+                             vector_store: VectorStore,
+                             top_k: int = 300,
+                             max_tokens: int = 2000,
+                             model: str = "claude-3-5-sonnet-20241022",
+                             themes: int = 0,
+                             summaries: int = 1, reranking: int = 1) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
         workflow_start = time.time()
 
         # Initialize state
-        state = State(
-            query=query,
-            filters={},
-            luminoso_results={},
-            vector_results={},
-            final_response="",
-            driver_summary="",
-            sentiment_summary="",
-            max_tokens=max_tokens,
-            model=model,
-            execution_times={}
-        )
+        state = State(query=query,
+                      filters={},
+                      luminoso_results={},
+                      vector_results={},
+                      final_response="",
+                      driver_summary="",
+                      sentiment_summary="",
+                      max_tokens=max_tokens,
+                      model=model,
+                      execution_times={})
 
         # Step 1: Generate filters
         filter_start = time.time()
         state = await generate_filters(state, llm_handler)
-        state["execution_times"]["filter_generation"] = time.time() - filter_start
+        state["execution_times"]["filter_generation"] = time.time(
+        ) - filter_start
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
-        luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler, themes=themes, summaries=summaries))
-        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=top_k))
+        luminoso_task = asyncio.create_task(
+            get_luminoso_stats(state,
+                               llm_handler,
+                               themes=themes,
+                               summaries=summaries))
+        vector_task = asyncio.create_task(
+            get_vector_results(state, vector_store, llm_handler, top_k=top_k, reranking = reranking))
 
         # Wait for both tasks to complete
         parallel_start = time.time()
@@ -312,13 +357,14 @@ async def process_query_lite(query: str, llm_handler: LLMHandler, vector_store: 
         # Step 4: Generate final response
         final_response_start = time.time()
         state = await generate_final_response(state, llm_handler)
-        state["execution_times"]["final_response"] = time.time() - final_response_start
+        state["execution_times"]["final_response"] = time.time(
+        ) - final_response_start
 
         # Record total workflow time
-        state["execution_times"]["total_workflow"] = time.time() - workflow_start
+        state["execution_times"]["total_workflow"] = time.time(
+        ) - workflow_start
 
         return state
-
 
     except Exception as e:
         raise RuntimeError(f"Query processing failed: {str(e)}")
