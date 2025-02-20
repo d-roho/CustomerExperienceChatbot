@@ -19,6 +19,7 @@ class State(TypedDict):
     max_tokens: int
     model: str
     execution_times: Dict[str, float]
+    reviews_summary: int
 
 
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
@@ -226,18 +227,44 @@ async def get_vector_results(state: State,
 
 async def generate_final_response(state: State,
                                   llm_handler: LLMHandler,
-                                  summaries: int = 0) -> State:
+                                  summaries: int = 0, reviews_summary: int = 0) -> State:
     """Generate final response combining all results."""
-    try:
+    try:         
         final_response_start = time.time()
-        # reviews_text = []
-        # for i in state['vector_results']:
-        #     reviews_text.append(i['text'])
+
         context_text = "\n".join([
             f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
             for idx, c in enumerate(state['vector_results'])
         ])
 
+        
+        if reviews_summary == 1:
+            response = llm_handler.anthropic.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=8000,
+                temperature=0,
+                system=
+                """You are a helpful customer experience analysis expert that provides insights from raw customer reviews. Provide a comprehensive analysis of the customer experience based on the USER QUERY and the raw reviews. Be sure to direct quotes from reviews to back up your analysis everywhere possible.   
+
+                Bullet points should be used wherever necessary
+                Reference the source text wherever using them to answer the question
+                """,
+                messages=[{
+                    "role":
+                    "user",
+                    "content":
+                    f"""
+                    User Query: {state['query']}
+
+                    Relevant Reviews:
+                    {context_text}
+                    """
+                }])
+
+            state["reviews_summary"] = response.content[0].text
+            context_text = response.content[0].text
+            print(context_text)
+  
         stats_summary = f"""
         Drivers Data Analysis:
         {state['driver_summary']}
@@ -251,13 +278,14 @@ async def generate_final_response(state: State,
             {state['driver_summary']}
             """
 
+
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=state.get('max_tokens',
                                  2000),  # Updated to use max_tokens from state
             temperature=0,
             system=
-            """You are a helpful customer experience analysis expert that provides insights from aggregate data summaries and raw customer reviews. Combine the data summaries and customer reviews to provide a comprehensive analysis of the customer experience. Be sure to include statistics and direct quotes from reviews to back up your analysis evevrywhere possible.   
+            """You are a helpful customer experience analysis expert that provides insights from aggregate data summaries and customer reviews. Combine the data summaries and customer reviews to provide a comprehensive analysis of the customer experience. Be sure to include statistics and direct quotes from reviews to back up your analysis everywhere possible.   
 
             Provide a well-structured response that includes:
             A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
@@ -279,7 +307,7 @@ async def generate_final_response(state: State,
 
                 {stats_summary}
 
-                Relevant Reviews:
+                Reviews:
                 {context_text}
                 """
             }])
@@ -300,7 +328,7 @@ async def process_query(query: str,
                         max_tokens: int = 2000,
                         model: str = "claude-3-5-sonnet-20241022",
                         reranking: int = 1,
-                        summaries: int = 0) -> Dict:
+                        summaries: int = 0, reviws_summary: int = 0) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -316,6 +344,7 @@ async def process_query(query: str,
                       sentiment_summary="",
                       max_tokens=max_tokens,
                       model=model,
+                      reviews_summary=reviws_summary,
                       execution_times={})
 
         # Step 1: Generate filters
@@ -351,7 +380,7 @@ async def process_query(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler)
+        state = await generate_final_response(state, llm_handler, reviews_summary)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
@@ -372,7 +401,8 @@ async def process_query_lite(query: str,
                              model: str = "claude-3-5-sonnet-20241022",
                              themes: int = 0,
                              summaries: int = 0,
-                             reranking: int = 1) -> Dict:
+                             reranking: int = 1,
+                             reviews_summary: int = 0) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -388,6 +418,7 @@ async def process_query_lite(query: str,
                       sentiment_summary="",
                       max_tokens=max_tokens,
                       model=model,
+                      reviews_summary=reviews_summary,
                       execution_times={})
 
         # Step 1: Generate filters
@@ -426,7 +457,7 @@ async def process_query_lite(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler)
+        state = await generate_final_response(state, llm_handler, reviews_summary)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 

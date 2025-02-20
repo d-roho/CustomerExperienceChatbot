@@ -1,4 +1,7 @@
-Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA    
+Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA   
+
+SLIDES & TESTING
+
 - make a lightweight version
 Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
 
@@ -43,8 +46,11 @@ Bottlenecks:
 - Basic RAG K=300: ~11s Pinecone Retrieval | 13s Reranking | 6s LLM call
 - Filter RAG K=300:
   - no filter - same
-  - filter test_json NY/Chicago/LA question - ~3s Pinecone Retrieval | ~5s Reranking | ~8s LLM call
+  - filter (test_json) NY/Chicago/LA question - ~3s Pinecone Retrieval | ~5s Reranking | ~8s LLM call
   - Cut time in half (30s to 15s)
+
+Agentic RAG:
+- filter (test_json) NY/Chicago/LA question (K=300, actual = ~40) - ~3s Filter Generation | ~15s stats | ~14s Pinecone retrieval | ~15s final response = 46s
 
 
 Jose:

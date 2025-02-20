@@ -520,6 +520,8 @@ st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
 lite = st.checkbox("Run Lite version (No Themes)", True)
 single_summary = st.checkbox("Generate single summary for Luminoso Stats", True)
+reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
+
 if st.button("Run Workflow"):
     st.session_state.last_query = query
     with st.spinner("Processing analysis workflow..."):
@@ -534,7 +536,7 @@ if st.button("Run Workflow"):
                                        top_k=top_k,
                                        max_tokens=max_tokens,
                                        model=model,
-                                       reranking=use_reranking, summaries = single_summary))
+                                       reranking=use_reranking, summaries = single_summary, reviews_summary = reviews_summary))
                 lite_execution = 1
             else:
                 response = asyncio.run(
@@ -544,7 +546,7 @@ if st.button("Run Workflow"):
                                   top_k=top_k,
                                   max_tokens=max_tokens,
                                   model=model,
-                                  reranking=use_reranking, summaries = single_summary))
+                                  reranking=use_reranking, summaries = single_summary, reviews_summary = reviews_summary))
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
@@ -574,6 +576,8 @@ if st.button("Run Workflow"):
                     st.dataframe(response['luminoso_results']['sentiment'])
                     st.subheader(f"Stats Summary \n")
                     st.markdown(response['driver_summary'])
+            if reviews_summary == 1:
+                st.markdown(response['reviews_summary'])
             with st.expander(
                     f"{len(response['vector_results'])} Reviews Retrieved"):
                 st.subheader(f"Total Reviews : \n Query:{response['query']}")

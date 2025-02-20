@@ -120,7 +120,6 @@ class VectorStore:
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
             for match in results.matches:
-                print(match)
                 stored_data = self.db.get_chunk(match.id, index_name)
                 if stored_data:
                     processed_results.append({
@@ -250,7 +249,6 @@ class VectorStore:
             # Retrieve full texts and metadata from MotherDuck
             processed_results = []
             for match in results.matches:
-                print(match)
                 stored_data = self.db.get_chunk(match.id, index_name)
                 if stored_data:
                     processed_results.append({
