@@ -517,7 +517,6 @@ elif selected_tool == "Metadata Filter RAG Search":
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
-top_k = st.slider("Number of reviews to retrieve", min_value=50, max_value=1000, value=300, step=50)
 if st.button("Run Workflow"):
     st.session_state.last_query = query
     with st.spinner("Processing analysis workflow..."):
