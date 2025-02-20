@@ -1,7 +1,6 @@
-from requests.utils import proxy_bypass_registry
 import streamlit as st
 import os
-import time # Added import for time module
+import time  # Added import for time module
 from typing import Optional, Tuple, List, Dict, Any
 from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
@@ -13,6 +12,7 @@ from utils.rag_workflow import process_query
 from utils.theme_workflow import process_themes
 import asyncio
 from datetime import datetime
+from utils.tools import LuminosoStats
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -174,7 +174,7 @@ elif input_method == "Existing Vector Store":
                                       index=default_index)
         if st.button("Generate Themes"):
             with st.spinner("Searching..."):
-                start_time = time.time() #Start timer
+                start_time = time.time()  #Start timer
                 try:
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                     # Generate themes using theme_workflow
@@ -205,8 +205,10 @@ elif input_method == "Existing Vector Store":
                     )
 
                     # Display results
-                    execution_time = time.time() - start_time #Stop timer
-                    st.subheader(f"Theme Generation Results (Execution time: {execution_time:.2f}s)")
+                    execution_time = time.time() - start_time  #Stop timer
+                    st.subheader(
+                        f"Theme Generation Results (Execution time: {execution_time:.2f}s)"
+                    )
                     with st.expander("Explore Workflow"):
                         st.subheader(f"## Preliminary Themes  w/ Sentiment")
                         st.json(response['preliminary_themes'], expanded=True)
@@ -235,108 +237,165 @@ if 'response' not in st.session_state:
 
 # Query interface
 st.header("Test the Tools")
-selected_tool = st.selectbox("Select Tool",
-      ["Luminoso Stats API", "RAG Retriver w/ Metadata Filter"],
-      index=0)
+selected_tool = st.selectbox(
+    "Select Tool", ["Luminoso Stats API", "RAG Retriver w/ Metadata Filter"],
+    index=0)
 if selected_tool == "Luminoso Stats API":
     st.subheader("Filter Parameters")
     col1, col2 = st.columns(2)
-    
+
     with col2:
-        selected_cities = st.multiselect(
-            "Cities",
-            ["Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn", "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles", "Miami", "Montreal", "Nashville", "New York", "North York", "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie", "Toronto", "Vancouver", "West Vancouver"],
-            key="cities_select"
-        )
-        
-        selected_states = st.multiselect(
-            "States",
-            ["NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", "MD", "TN", "FL", "NJ", "CO"],
-            key="states_select"
-        )
-        
-        selected_location = st.multiselect(
-            "Select Store Locations",
-            [
-                "43 Spring St, New York, NY",
-                "8404 Melrose Ave, Los Angeles, CA",
-                "11700 Domain Blvd Suite 126, Austin, TX",
-                "2166 W 4th Ave, Vancouver, BC, Canada",
-                "126 Newbury St, Boston, MA",
-                "1410 Peel St, Montreal, Quebec, Canada",
-                "3401 Dufferin St, North York, ON, Canada",
-                "940 W Randolph St, Chicago, IL, United States",
-                "888 Westheimer Rd Suite 158, Houston, TX",
-                "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
-                "2621 NE University Village St, Seattle, WA",
-                "107 N 6th St, Brooklyn, NY",
-                "144 5th Ave, New York, NY",
-                "1525 Walnut St, Philadelphia, PA",
-                "7247 Woodmont Ave, Bethesda, MD",
-                "64 Ossington Ave, Toronto, ON, Canada",
-                "2803 12th Ave S, Nashville, TN",
-                "219 NW 25th St, Miami, FL",
-                "925 Main St Unit H3, West Vancouver, BC, Canada",
-                "124 Bellevue Square Unit L124, Bellevue, WA",
-                "1200 Morris Tpke, Short Hills, NJ, United States",
-                "3000 E 1st Ave #144, Denver, CO",
-                "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
-                "737 Dunsmuir St, Vancouver, BC, Canada",
-                "27 Boylston St, Chestnut Hill, MA"
-            ],
-            key="location_select"
-        )
+        selected_cities = st.multiselect("Cities", [
+            "Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
+            "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
+            "Miami", "Montreal", "Nashville", "New York", "North York",
+            "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
+            "Toronto", "Vancouver", "West Vancouver"
+        ],
+                                         key="cities_select")
 
-        selected_themes = st.multiselect(
-            "Select Themes",
-            [
-                "Exceptional Customer Service & Support",
-                "Poor Service & Long Wait Times",
-                "Product Durability & Quality Issues",
-                "Aesthetic Design & Visual Appeal",
-                "Professional Piercing Services & Environment",
-                "Store Ambiance & Try-On Experience",
-                "Price & Policy Transparency",
-                "Store Organization & Product Selection",
-                "Complex Returns & Warranty Handling",
-                "Communication & Policy Consistency",
-                "Value & Price-Quality Assessment",
-                "Affordable Luxury & Investment Value",
-                "Online Shopping Experience",
-                "Inventory & Cross-Channel Integration"
-            ],
-            key="themes_select"
-        )
-    
+        selected_states = st.multiselect("States", [
+            "NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", "MD",
+            "TN", "FL", "NJ", "CO"
+        ],
+                                         key="states_select")
+
+        selected_location = st.multiselect("Select Store Locations", [
+            "43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
+            "11700 Domain Blvd Suite 126, Austin, TX",
+            "2166 W 4th Ave, Vancouver, BC, Canada",
+            "126 Newbury St, Boston, MA",
+            "1410 Peel St, Montreal, Quebec, Canada",
+            "3401 Dufferin St, North York, ON, Canada",
+            "940 W Randolph St, Chicago, IL, United States",
+            "888 Westheimer Rd Suite 158, Houston, TX",
+            "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
+            "2621 NE University Village St, Seattle, WA",
+            "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
+            "1525 Walnut St, Philadelphia, PA",
+            "7247 Woodmont Ave, Bethesda, MD",
+            "64 Ossington Ave, Toronto, ON, Canada",
+            "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
+            "925 Main St Unit H3, West Vancouver, BC, Canada",
+            "124 Bellevue Square Unit L124, Bellevue, WA",
+            "1200 Morris Tpke, Short Hills, NJ, United States",
+            "3000 E 1st Ave #144, Denver, CO",
+            "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
+            "737 Dunsmuir St, Vancouver, BC, Canada",
+            "27 Boylston St, Chestnut Hill, MA"
+        ],
+                                           key="location_select")
+
+        selected_themes = st.multiselect("Select Themes", [
+            "Exceptional Customer Service & Support",
+            "Poor Service & Long Wait Times",
+            "Product Durability & Quality Issues",
+            "Aesthetic Design & Visual Appeal",
+            "Professional Piercing Services & Environment",
+            "Store Ambiance & Try-On Experience",
+            "Price & Policy Transparency",
+            "Store Organization & Product Selection",
+            "Complex Returns & Warranty Handling",
+            "Communication & Policy Consistency",
+            "Value & Price-Quality Assessment",
+            "Affordable Luxury & Investment Value",
+            "Online Shopping Experience",
+            "Inventory & Cross-Channel Integration"
+        ],
+                                         key="themes_select")
+
     with col1:
-        start_month = st.number_input("Start Month", min_value=1, max_value=12, value=1, key="start_month")
-        start_year = st.number_input("Start Year", min_value=2019, max_value=2025, value=2019, key="start_year")
-        end_month = st.number_input("End Month", min_value=1, max_value=12, value=12, key="end_month")
-        end_year = st.number_input("End Year", min_value=2019, max_value=2025, value=2025, key="end_year")
+        start_month = st.number_input("Start Month",
+                                      min_value=1,
+                                      max_value=12,
+                                      value=1,
+                                      key="start_month")
+        start_year = st.number_input("Start Year",
+                                     min_value=2019,
+                                     max_value=2025,
+                                     value=2019,
+                                     key="start_year")
+        end_month = st.number_input("End Month",
+                                    min_value=1,
+                                    max_value=12,
+                                    value=12,
+                                    key="end_month")
+        end_year = st.number_input("End Year",
+                                   min_value=2019,
+                                   max_value=2025,
+                                   value=2025,
+                                   key="end_year")
 
-        min_rating = st.number_input("Minimum Rating", min_value=1, max_value=5, value=1, key="min_rating")
-        max_rating = st.number_input("Minimum Rating", min_value=1, max_value=5, value=5, key="max_rating")
-
+        min_rating = st.number_input("Minimum Rating",
+                                     min_value=1,
+                                     max_value=5,
+                                     value=1,
+                                     key="min_rating")
+        max_rating = st.number_input("Minimum Rating",
+                                     min_value=1,
+                                     max_value=5,
+                                     value=5,
+                                     key="max_rating")
 
     if st.button("Fetch Stats", key="fetch_stats"):
-        if not any([selected_cities, selected_states, selected_themes]):
-            st.warning("Please select at least one filter parameter")
-        else:
-            filter_params = {
-                "cities": selected_cities,
-                "states": selected_states,
-                "themes": selected_themes,
-                "month_start": [start_month],
-                "year_start": [start_year],
-                "month_end": [end_month],
-                "year_end": [end_year],
-                "subsets": ["cities", "themes"] if selected_cities and selected_themes else []
-            }
-            st.json(filter_params)
+        filter_params = {
+            "cities":
+            selected_cities,
+            "states":
+            selected_states,
+            "themes":
+            selected_themes,
+            "month_start": [start_month],
+            "year_start": [start_year],
+            "month_end": [end_month],
+            "year_end": [end_year],
+            "subsets": ["cities", "themes"]
+            if selected_cities and selected_themes else []
+        }
+
+        lumin_class = LuminosoStats()
+        lumin_client = lumin_class.initialize_client()
+
+        with st.spinner("Searching..."):
+            start_time = time.time()  #Start timer
+            try:
+                print(filter_params)
+
+                # fetch drivers
+                driver_time = time.time()  #Start timer
+                drivers = lumin_class.fetch_drivers(lumin_client,
+                                                    filter_params)
+                driver_execution_time = time.time() - driver_time  #Stop timer
+
+                sentiment_time = time.time()  #Start timer
+                sentiment = lumin_class.fetch_sentiment(
+                    lumin_client, filter_params)
+                sentiment_execution_time = time.time(
+                ) - sentiment_time  #Stop timer
+
+                # # Display results
+
+                execution_time = time.time() - start_time  #Stop timer
+                st.success(f'Done (Execution time: {execution_time:.2f}s)')
+
+                st.subheader("Filter")
+                st.json(filter_params)
+
+                st.subheader(
+                    f"Drivers | Execution Time: {driver_execution_time:.2f}s"
+                    ")")
+                st.dataframe(drivers)
+
+                st.subheader(
+                    f"Sentiment | Execution Time: {sentiment_execution_time:.2f}s"
+                    ")")
+                st.dataframe(sentiment)
+
+            except Exception as e:
+                st.error(f"Luminoso Stats Retrieval failed: {str(e)}")
 
 elif selected_tool == "Filter Search":
     pass
-
 
 # Query interface
 st.header("Query the Reviews")
@@ -346,7 +405,7 @@ if query:
     if st.button("Basic RAG Search"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
-            start_time = time.time() #Start timer
+            start_time = time.time()  #Start timer
             try:
                 # Search for relevant chunks
                 print(selected_index)
@@ -365,8 +424,10 @@ if query:
                         query, results, model, max_tokens=max_tokens)
 
                     # Display results
-                    execution_time = time.time() - start_time #Stop timer
-                    st.subheader(f"Generated Response (Execution time: {execution_time:.2f}s)")
+                    execution_time = time.time() - start_time  #Stop timer
+                    st.subheader(
+                        f"Generated Response (Execution time: {execution_time:.2f}s)"
+                    )
                     st.code(response, language="text")
 
                     st.subheader("Context Used")
@@ -377,51 +438,10 @@ if query:
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
 
-    if st.button("Fetch Luminoso Stats"):
-        from utils.tools import LuminosoStats
-
-        lumin_class = LuminosoStats()
-        lumin_client = lumin_class.initialize_client()
-
-        st.session_state.last_query = query
-        with st.spinner("Searching..."):
-            start_time = time.time() #Start timer
-            try:
-                with open('attached_assets/test_filter.json', 'r') as file:
-                    filter = json.load(file)
-                print(filter)
-
-                # fetch drivers
-                driver_time = time.time() #Start timer
-                drivers = lumin_class.fetch_drivers(lumin_client, filter)
-                driver_execution_time = time.time() - driver_time #Stop timer
-
-                sentiment_time = time.time() #Start timer
-                sentiment = lumin_class.fetch_sentiment(lumin_client, filter)
-                sentiment_execution_time = time.time() - sentiment_time #Stop timer
-
-                # # Display results
-
-                execution_time = time.time() - start_time #Stop timer
-                st.success(f'Done (Execution time: {execution_time:.2f}s)')
-
-                st.subheader("Test Filter")
-                st.json(filter)
-
-                st.subheader(f"Drivers | Execution Time: {driver_execution_time:.2f}s"")")
-                st.dataframe(drivers)
-
-                st.subheader(f"Sentiment | Execution Time: {sentiment_execution_time:.2f}s"")")
-                st.dataframe(sentiment)
-
-
-            except Exception as e:
-                st.error(f"Search failed: {str(e)}")
-
     if st.button("Fetch Filtered Reviews"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
-            start_time = time.time() #Start timer
+            start_time = time.time()  #Start timer
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
                     filter = json.load(file)
@@ -444,8 +464,10 @@ if query:
                         query, results, model, max_tokens=max_tokens)
 
                     # Display results
-                    execution_time = time.time() - start_time #Stop timer
-                    st.subheader(f"Generated Response (Execution time: {execution_time:.2f}s)")
+                    execution_time = time.time() - start_time  #Stop timer
+                    st.subheader(
+                        f"Generated Response (Execution time: {execution_time:.2f}s)"
+                    )
                     st.code(response, language="text")
 
                     st.subheader("Context Used")
@@ -459,7 +481,7 @@ if query:
     if st.button("Agentic Search"):
         st.session_state.last_query = query
         with st.spinner("Processing analysis workflow..."):
-            start_time = time.time() #Start timer
+            start_time = time.time()  #Start timer
             try:
                 import asyncio
                 response = asyncio.run(
@@ -489,7 +511,7 @@ if query:
                         st.markdown(
                             f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
                         )
-                execution_time = time.time() - start_time #Stop timer
+                execution_time = time.time() - start_time  #Stop timer
                 st.success(f'Done (Execution time: {execution_time:.2f}s)')
 
             except Exception as e:
