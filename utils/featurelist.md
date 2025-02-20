@@ -1,4 +1,4 @@
-Demos: Luminoso, Filter Reviews, Agentic Flow | Subseting, Chart ADA    
+Demos: Luminoso, Filter Reviews, Agentic Flow Tuning | Subseting, Chart ADA    
 
 Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
 
