@@ -5,6 +5,7 @@ import json
 from utils.llm import LLMHandler
 from utils.vector_store import VectorStore
 from utils.tools import LuminosoStats
+import pandas as pd
 
 class State(TypedDict):
     index: str
@@ -17,12 +18,12 @@ async def generate_preliminary_themes(state: State, llm_handler: LLMHandler, vec
     """Generate Themes and sentiments based on entire review set"""
 
     try: #fetch reviews from MD
-        reviews_df = vector_store.fetch_all_reviews(index)
+        reviews_df = vector_store.fetch_all_reviews(index).sample(750) # token limit
         sample_df = reviews_df.sample(n=5).to_dict() # for testing keyword extraction
 
         reviews_list = []    
     
-        for idx, row in iterrows(reviews_list):
+        for idx, row in (reviews_df.iterrows()):
             reviews_list.extend(row['Text'])
 
         REVIEWS = '\n'.join(reviews_list)

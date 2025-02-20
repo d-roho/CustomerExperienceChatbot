@@ -9,6 +9,8 @@ from pinecone import ServerlessSpec
 import json
 from utils.rag_workflow import process_query
 from utils.theme_workflow import process_themes
+import asyncio
+
 
 
 
@@ -174,7 +176,7 @@ elif input_method == "Existing Vector Store":
             with st.spinner("Searching..."):
                 try:
                     # Generate themes using theme_workflow 
-                    response = await process_themes(selected_index, llm_handler, vector_store)
+                    response = asyncio.run(process_themes(selected_index, llm_handler, vector_store))
 
                     # Display results
                     st.subheader("Theme Generation Results")
