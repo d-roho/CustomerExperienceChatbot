@@ -529,6 +529,10 @@ if st.button("Run Workflow"):
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
+                st.subheader("Execution Times")
+                for step, duration in response['execution_times'].items():
+                    st.metric(f"{step.replace('_', ' ').title()}", f"{duration:.2f}s")
+                    
                 st.subheader(f"## Query: \n {response['query']}")
                 st.subheader(f"## Generated Filter: \n")
                 st.json(response['filters'], expanded=True)

@@ -16,6 +16,7 @@ class State(TypedDict):
     final_response: str
     max_tokens: int
     model: str
+    execution_times: Dict[str, float]
 
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     """Generate filters based on user query using Claude."""
@@ -204,6 +205,9 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
 async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000, model: str = "claude-3-5-sonnet-20241022") -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
+        import time
+        workflow_start = time.time()
+        
         # Initialize state
         state = State(
             query=query,
@@ -214,25 +218,38 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
             driver_summary="",
             sentiment_summary="",
             max_tokens=max_tokens,
-            model=model
+            model=model,
+            execution_times={}
         )
 
         # Step 1: Generate filters
+        filter_start = time.time()
         state = await generate_filters(state, llm_handler)
+        state["execution_times"]["filter_generation"] = time.time() - filter_start
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
         luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler))
         vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=top_k))
 
         # Wait for both tasks to complete
+        parallel_start = time.time()
         results = await asyncio.gather(luminoso_task, vector_task)
-
+        parallel_time = time.time() - parallel_start
+        
+        # Record execution times
+        state["execution_times"]["parallel_tasks"] = parallel_time
+        
         # Merge results back into state
         state["luminoso_results"] = results[0]["luminoso_results"]
         state["vector_results"] = results[1]["vector_results"]
 
         # Step 4: Generate final response
+        final_response_start = time.time()
         state = await generate_final_response(state, llm_handler)
+        state["execution_times"]["final_response"] = time.time() - final_response_start
+        
+        # Record total workflow time
+        state["execution_times"]["total_workflow"] = time.time() - workflow_start
 
         return state
 
