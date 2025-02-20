@@ -103,11 +103,11 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
                 temperature=0,
                 system="""
                 You are an expert customer experience analyst that gathers insights from aggregate rating drivers data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query. Assume the data provided is for the date and locations etc. asked by the user
-    
+
                 In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
-    
+
                 Dataset - A collection of themes (aspects of customer experience) and their impact on customer ratings. 
-    
+
                 Theme Name: Name of the aspect
                 Normalized Relevance to Subset: The proportion of the total number of customers that this theme is relevant to (0-1). This is an indicator of pervasiveness of the theme.
                 Matches Found in Subset: Number of reviews that include this theme
@@ -115,7 +115,7 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
                 Impact Confidence Level: The confidence level of the impact on score. This is an indicator of the reliability of the impact on score. (0-1)
                 Average Score: The average rating of the customer reviews that include this theme. (0-1)
                 Baseline Score: The average rating of all customers.(0-1)            
-    
+
             """,
                 messages=[{
                     "role":
@@ -132,11 +132,11 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
                 temperature=0,
                 system="""
                 You are an expert customer experience analyst that gathers insights from aggregate sentiment data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query. Assume the data provided is for the date and locations etc. asked by the user
-    
+
                 In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
-    
+
                 Dataset - A collection of themes (aspects of customer experience) and customer sentiment around those themes. 
-    
+
                 Theme Name: Name of the aspect
                 Proportion of Subset With Theme: The proportion of the total reviews that include this theme (0-1). This is an indicator of pervasiveness of the theme.)
                 Proportion of Positive Mentions: The proportion theme mentions made with a positive sentiment (0-1)
@@ -203,6 +203,7 @@ async def get_vector_results(state: State,
                              reranking: int = 1) -> State:
     """Get relevant reviews from vector store based on filters."""
     try:
+        vector_start = time.time()
         results = vector_store.filter_search(
             state["filters"],
             state['query'],
@@ -217,6 +218,7 @@ async def get_vector_results(state: State,
                 state['query'], results)
             state["vector_results"] = reranked_results
             print(reranked_results)
+        state["execution_times"]["vector_search"] = time.time() - vector_start
         return state
     except Exception as e:
         raise RuntimeError(f"Vector store search failed: {str(e)}")
@@ -227,7 +229,7 @@ async def generate_final_response(state: State,
                                   summaries: int = 0) -> State:
     """Generate final response combining all results."""
     try:
-        vector_start = time.time()
+        final_response_start = time.time()
         # reviews_text = []
         # for i in state['vector_results']:
         #     reviews_text.append(i['text'])
@@ -276,14 +278,15 @@ async def generate_final_response(state: State,
                 User Query: {state['query']}
 
                 {stats_summary}
-                
+
                 Relevant Reviews:
                 {context_text}
                 """
             }])
 
         state["final_response"] = response.content[0].text
-        state["execution_times"]["vector_search"] = time.time() - vector_start
+        state["execution_times"]["final_response_generation"] = time.time(
+        ) - final_response_start
 
         return state
     except Exception as e:
@@ -331,13 +334,16 @@ async def process_query(query: str,
                                top_k=top_k,
                                reranking=reranking))
 
-        # Wait for both tasks to complete
+        # Start timing parallel tasks
         parallel_start = time.time()
         results = await asyncio.gather(luminoso_task, vector_task)
-        parallel_time = time.time() - parallel_start
 
-        # Record execution times
-        state["execution_times"]["parallel_tasks"] = parallel_time
+        # Record individual task times from results
+        state["execution_times"].update(results[0]["execution_times"])
+        state["execution_times"].update(results[1]["execution_times"])
+
+        # Record total parallel execution time
+        state["execution_times"]["parallel_total"] = time.time() - parallel_start
 
         # Merge results back into state
         state["luminoso_results"] = results[0]["luminoso_results"]
@@ -346,7 +352,7 @@ async def process_query(query: str,
         # Step 4: Generate final response
         final_response_start = time.time()
         state = await generate_final_response(state, llm_handler)
-        state["execution_times"]["final_response"] = time.time(
+        state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
         # Record total workflow time
@@ -403,13 +409,16 @@ async def process_query_lite(query: str,
                                top_k=top_k,
                                reranking=reranking))
 
-        # Wait for both tasks to complete
+        # Start timing parallel tasks
         parallel_start = time.time()
         results = await asyncio.gather(luminoso_task, vector_task)
-        parallel_time = time.time() - parallel_start
 
-        # Record execution times
-        state["execution_times"]["parallel_tasks"] = parallel_time
+        # Record individual task times from results
+        state["execution_times"].update(results[0]["execution_times"])
+        state["execution_times"].update(results[1]["execution_times"])
+
+        # Record total parallel execution time
+        state["execution_times"]["parallel_total"] = time.time() - parallel_start
 
         # Merge results back into state
         state["luminoso_results"] = results[0]["luminoso_results"]
@@ -418,7 +427,7 @@ async def process_query_lite(query: str,
         # Step 4: Generate final response
         final_response_start = time.time()
         state = await generate_final_response(state, llm_handler)
-        state["execution_times"]["final_response"] = time.time(
+        state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
         # Record total workflow time
