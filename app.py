@@ -245,64 +245,84 @@ if selected_tool == "Luminoso Stats API":
     col1, col2 = st.columns(2)
 
     with col2:
-        selected_cities = st.multiselect("Cities", [
-            "Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
-            "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
-            "Miami", "Montreal", "Nashville", "New York", "North York",
-            "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
-            "Toronto", "Vancouver", "West Vancouver"
-        ],
-                                         key="cities_select")
+        # Cities
+        cities_list = ["Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
+                      "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
+                      "Miami", "Montreal", "Nashville", "New York", "North York",
+                      "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
+                      "Toronto", "Vancouver", "West Vancouver"]
+        select_all_cities = st.checkbox("Select All Cities", key="select_all_cities")
+        selected_cities = st.multiselect(
+            "Cities",
+            cities_list,
+            default=cities_list if select_all_cities else [],
+            key="cities_select"
+        )
 
-        selected_states = st.multiselect("States", [
-            "NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", "MD",
-            "TN", "FL", "NJ", "CO"
-        ],
-                                         key="states_select")
+        # States
+        states_list = ["NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", 
+                      "MD", "TN", "FL", "NJ", "CO"]
+        select_all_states = st.checkbox("Select All States", key="select_all_states")
+        selected_states = st.multiselect(
+            "States",
+            states_list,
+            default=states_list if select_all_states else [],
+            key="states_select"
+        )
 
-        selected_location = st.multiselect("Select Store Locations", [
-            "43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
-            "11700 Domain Blvd Suite 126, Austin, TX",
-            "2166 W 4th Ave, Vancouver, BC, Canada",
-            "126 Newbury St, Boston, MA",
-            "1410 Peel St, Montreal, Quebec, Canada",
-            "3401 Dufferin St, North York, ON, Canada",
-            "940 W Randolph St, Chicago, IL, United States",
-            "888 Westheimer Rd Suite 158, Houston, TX",
-            "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
-            "2621 NE University Village St, Seattle, WA",
-            "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
-            "1525 Walnut St, Philadelphia, PA",
-            "7247 Woodmont Ave, Bethesda, MD",
-            "64 Ossington Ave, Toronto, ON, Canada",
-            "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
-            "925 Main St Unit H3, West Vancouver, BC, Canada",
-            "124 Bellevue Square Unit L124, Bellevue, WA",
-            "1200 Morris Tpke, Short Hills, NJ, United States",
-            "3000 E 1st Ave #144, Denver, CO",
-            "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
-            "737 Dunsmuir St, Vancouver, BC, Canada",
-            "27 Boylston St, Chestnut Hill, MA"
-        ],
-                                           key="location_select")
+        # Locations
+        locations_list = ["43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
+                         "11700 Domain Blvd Suite 126, Austin, TX",
+                         "2166 W 4th Ave, Vancouver, BC, Canada",
+                         "126 Newbury St, Boston, MA",
+                         "1410 Peel St, Montreal, Quebec, Canada",
+                         "3401 Dufferin St, North York, ON, Canada",
+                         "940 W Randolph St, Chicago, IL, United States",
+                         "888 Westheimer Rd Suite 158, Houston, TX",
+                         "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
+                         "2621 NE University Village St, Seattle, WA",
+                         "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
+                         "1525 Walnut St, Philadelphia, PA",
+                         "7247 Woodmont Ave, Bethesda, MD",
+                         "64 Ossington Ave, Toronto, ON, Canada",
+                         "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
+                         "925 Main St Unit H3, West Vancouver, BC, Canada",
+                         "124 Bellevue Square Unit L124, Bellevue, WA",
+                         "1200 Morris Tpke, Short Hills, NJ, United States",
+                         "3000 E 1st Ave #144, Denver, CO",
+                         "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
+                         "737 Dunsmuir St, Vancouver, BC, Canada",
+                         "27 Boylston St, Chestnut Hill, MA"]
+        select_all_locations = st.checkbox("Select All Locations", key="select_all_locations")
+        selected_location = st.multiselect(
+            "Select Store Locations",
+            locations_list,
+            default=locations_list if select_all_locations else [],
+            key="location_select"
+        )
 
-        selected_themes = st.multiselect("Select Themes", [
-            "Exceptional Customer Service & Support",
-            "Poor Service & Long Wait Times",
-            "Product Durability & Quality Issues",
-            "Aesthetic Design & Visual Appeal",
-            "Professional Piercing Services & Environment",
-            "Store Ambiance & Try-On Experience",
-            "Price & Policy Transparency",
-            "Store Organization & Product Selection",
-            "Complex Returns & Warranty Handling",
-            "Communication & Policy Consistency",
-            "Value & Price-Quality Assessment",
-            "Affordable Luxury & Investment Value",
-            "Online Shopping Experience",
-            "Inventory & Cross-Channel Integration"
-        ],
-                                         key="themes_select")
+        # Themes
+        themes_list = ["Exceptional Customer Service & Support",
+                      "Poor Service & Long Wait Times",
+                      "Product Durability & Quality Issues",
+                      "Aesthetic Design & Visual Appeal",
+                      "Professional Piercing Services & Environment",
+                      "Store Ambiance & Try-On Experience",
+                      "Price & Policy Transparency",
+                      "Store Organization & Product Selection",
+                      "Complex Returns & Warranty Handling",
+                      "Communication & Policy Consistency",
+                      "Value & Price-Quality Assessment",
+                      "Affordable Luxury & Investment Value",
+                      "Online Shopping Experience",
+                      "Inventory & Cross-Channel Integration"]
+        select_all_themes = st.checkbox("Select All Themes", key="select_all_themes")
+        selected_themes = st.multiselect(
+            "Select Themes",
+            themes_list,
+            default=themes_list if select_all_themes else [],
+            key="themes_select"
+        )
 
     with col1:
         start_month = st.number_input("Start Month",
