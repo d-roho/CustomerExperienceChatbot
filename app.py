@@ -286,22 +286,28 @@ if query:
                 print(filter)
 
                 # fetch drivers
+                driver_time = time.time() #Start timer
                 drivers = lumin_class.fetch_drivers(lumin_client, filter)
+                driver_execution_time = time.time() - driver_time #Stop timer
+
+                sentiment_time = time.time() #Start timer
                 sentiment = lumin_class.fetch_sentiment(lumin_client, filter)
+                sentiment_execution_time = time.time() - sentiment_time #Stop timer
 
                 # # Display results
+
+                execution_time = time.time() - start_time #Stop timer
+                st.success(f'Done (Execution time: {execution_time:.2f}s)')
 
                 st.subheader("Test Filter")
                 st.json(filter)
 
-                st.subheader("Drivers")
+                st.subheader(f"Drivers | Execution Time: {driver_execution_time:.2f}s"")")
                 st.dataframe(drivers)
 
-                st.subheader("Sentiment")
+                st.subheader(f"Sentiment | Execution Time: {sentiment_execution_time:.2f}s"")")
                 st.dataframe(sentiment)
 
-                execution_time = time.time() - start_time #Stop timer
-                st.success(f'Done (Execution time: {execution_time:.2f}s)')
 
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")

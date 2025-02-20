@@ -4,7 +4,7 @@ import json
 from luminoso_api import LuminosoClient
 import pandas as pd
 import datetime
-
+import time
 
 class LuminosoStats:
 
@@ -128,7 +128,7 @@ class LuminosoStats:
 
             print(filters)
             counter = 0
-            themes = 0
+            themes = 1
             if themes == 1:
                 print(drivers_exist)
                 for theme in drivers_exist:
