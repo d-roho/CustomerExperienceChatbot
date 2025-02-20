@@ -6,7 +6,6 @@ import pandas as pd
 import datetime
 import time
 
-
 class LuminosoStats:
 
     def __init__(self):
@@ -132,7 +131,7 @@ class LuminosoStats:
             print(f"Filters preparation time: {filters_time:.2f}s")
             print(filters)
             counter = 0
-            themes = 0
+            # themes = 0
             api_start_time = time.time()
             if themes == 1:
                 print(drivers_exist)
@@ -190,9 +189,7 @@ class LuminosoStats:
                     df = df.rename(columns=column_mapping)
                     if counter == 0:
                         api_time = time.time() - api_start_time
-                        print(
-                            f"First API call and processing time: {api_time:.2f}s"
-                        )
+                        print(f"First API call and processing time: {api_time:.2f}s")
                     print(df)
                     if counter == 0:
                         df_deep_copy = df.copy(deep=True)
@@ -356,7 +353,7 @@ class LuminosoStats:
             print(filters)
             counter = 0
             api_start_time = time.time()
-            themes = 0
+            # themes = 0
             if themes == 1:
                 print(sentiments_exist)
                 for theme in sentiments_exist:

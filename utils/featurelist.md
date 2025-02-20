@@ -4,7 +4,6 @@ Improve Quality and Consistency | Make more agentic (flexible tool use process) 
 
 
 Tool # 1 Luminoso API
-  - Time it (T3)
   - Filters
     - Themes (1-by-1, Combine terms, Helios themes)
   - LLM Summarization
@@ -38,6 +37,12 @@ Themes Daylight upload
 'coroutine' object is not subscriptable:
 LangGraph error. Fix = execute with asyncio  
 
-,
-"Store Ambiance & Try-On Experience",
-"Product Durability & Quality Issues"
+Bottlenecks:
+
+- Luminoso: W/o themes (<1s), W/ themes (~20s)
+- Basic RAG K=300: ~11s Pinecone Retrieval | 13s Reranking | 6s LLM call
+- Filter RAG K=300:
+  - no filter - same
+  - filter test_json NY/Chicago/LA question - ~3s Pinecone Retrieval | ~5s Reranking | ~8s LLM call
+  - Cut time in half (30s to 15s)
+  
