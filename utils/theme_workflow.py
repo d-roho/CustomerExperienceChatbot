@@ -167,13 +167,13 @@ async def process_themes(index: str, llm_handler: LLMHandler, vector_store: Vect
     """Process a query through the workflow and return the final response."""
     try:
         # Initialize state
-        state = State(
-        index = index,
-        preliminary_themes = {},
-        sample_df = {},
-        refined_themes = {},
-        tagged_df = {}
-        )
+        state: State = {
+            'index': index,
+            'preliminary_themes': {},
+            'sample_df': {},
+            'refined_themes': {},
+            'tagged_df': {}
+        }
 
         # Step 1: Generate filters
         state = await generate_preliminary_themes(state, llm_handler, vector_store, index)

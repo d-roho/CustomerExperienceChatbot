@@ -173,8 +173,8 @@ elif input_method == "Existing Vector Store":
         if st.button("Generate Themes"):
             with st.spinner("Searching..."):
                 try:
-                # Generate themes using theme_workflow 
-                    response = process_themes(selected_index, llm_handler, vector_store)
+                    # Generate themes using theme_workflow 
+                    response = await process_themes(selected_index, llm_handler, vector_store)
 
                     # Display results
                     st.subheader("Theme Generation Results")
