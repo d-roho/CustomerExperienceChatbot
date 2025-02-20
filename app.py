@@ -8,6 +8,8 @@ import pandas as pd
 from pinecone import ServerlessSpec
 import json
 from utils.rag_workflow import process_query
+from utils.theme_workflow import process_themes
+
 
 
 # Initialize session state
@@ -168,6 +170,26 @@ elif input_method == "Existing Vector Store":
         selected_index = st.selectbox("Select Vector Store",
                                       available_indexes,
                                       index=default_index)
+        if st.button("Generate Themes"):
+            with st.spinner("Searching..."):
+                try:
+                # Generate themes using theme_workflow 
+                    response = process_themes(selected_index, llm_handler, vector_store)
+
+                    # Display results
+                    st.subheader("Theme Generation Results")
+                    with st.expander("Explore Workflow"):
+                        st.subheader(f"## Preliminary Themes  w/ Sentiment")
+                        st.json(response['preliminary_themes'], expanded=True)
+                        st.subheader(f"Merged & Refine Themes \n")
+                        st.json(response['refined_themes'], expanded=True)
+                        st.subheader(f"Reviews tagged with Themes and Subthemes")
+                        st.dataframe(pd.DataFrame.from_dict(response['sample_df'][['Text', 'subthemes']]))
+                except Exception as e:
+                    st.error(f"Failed to generate themes: {str(e)}")
+                
+            
+            
 
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
@@ -189,7 +211,7 @@ st.header("Query the Reviews")
 query = st.text_input("Enter your query")
 
 if query:
-    if st.button("Search"):
+    if st.button("Basic RAG Search"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
@@ -221,7 +243,7 @@ if query:
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
 
-    if st.button("Luminoso Search"):
+    if st.button("Fetch Luminoso Stats"):
         from utils.tools import LuminosoStats
 
         lumin_class = LuminosoStats()
@@ -253,7 +275,7 @@ if query:
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
 
-    if st.button("Filter Search"):
+    if st.button("Fetch Filtered Reviews"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
@@ -297,17 +319,26 @@ if query:
 
                 st.subheader("Analysis Results")
                 st.markdown(response['final_response'])
-                st.subheader("Workflow")
-                st.markdown(f"Query \n {response['query']}")
-                st.markdown(f"Generated Filter \n {response['filters']}")
-                st.markdown(f"Luminoso Data \n {response['luminoso_results']}")
-                st.markdown(f"Driver Summary \n {response['driver_summary']}")
-                st.markdown(f"Sentiment Summary \n {response['sentiment_summary']}")
-                st.markdown(f"Reviews Retrieved \n {response['vector_results'][:10000]}")
-
+                with st.expander("Explore Workflow"):
+                    st.subheader(f"## Query: \n {response['query']}")
+                    st.subheader(f"## Generated Filter: \n")
+                    st.json(response['filters'], expanded=True)
+                    st.subheader(f"Drivers Data \n")
+                    st.dataframe(response['luminoso_results']['drivers'])
+                    st.subheader(f"Drivers Summary \n")
+                    st.markdown(response['driver_summary'])
+                    st.subheader(f"Sentiment Data \n")
+                    st.dataframe(response['luminoso_results']['sentiment'])
+                    st.subheader(f"Sentiment Summary \n")
+                    st.markdown(response['sentiment_summary'])
+                
+                with st.expander(f"{len(response['vector_results'])} Reviews Retrieved"):
+                    st.subheader(f"## Total Reviews : \n {response['query']}")
+                    for i, curr_rev in enumerate(response['vector_results'][:50]):
+                        st.markdown(f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}")
+                
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
-
 # Footer
 st.markdown("---")
 st.markdown("Built with Streamlit, Pinecone, and Anthropic Claude")

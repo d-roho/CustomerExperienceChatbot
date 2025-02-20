@@ -131,14 +131,14 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic) -> State:
     except Exception as e:
         raise RuntimeError(f"Luminoso stats retrieval failed: {str(e)}")
 
-async def get_vector_results(state: State, vector_store: VectorStore, llm_handler: LLMHandler) -> State:
+async def get_vector_results(state: State, vector_store: VectorStore, llm_handler: LLMHandler, top_k: int) -> State:
     """Get relevant reviews from vector store based on filters."""
     try:
         results = vector_store.filter_search(
             state["filters"],
             state['query'],
             llm_handler,
-            top_k=5,  # Default value, can be made configurable
+            top_k=top_k,  # Default value, can be made configurable
             index_name='reviews-csv-main'
         )
 
@@ -153,14 +153,13 @@ async def get_vector_results(state: State, vector_store: VectorStore, llm_handle
 async def generate_final_response(state: State, llm_handler: LLMHandler) -> State:
     """Generate final response combining all results."""
     try: 
-        reviews_text = []
-        for i in state['vector_results']:
-            reviews_text.append(i['text'])
-        context_text = reviews_text
-        # context_text = "\n".join([
-        #     f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
-        #     for idx, c in enumerate(context)
-        # ])
+        # reviews_text = []
+        # for i in state['vector_results']:
+        #     reviews_text.append(i['text'])
+        context_text = "\n".join([
+            f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+            for idx, c in enumerate(state['vector_results'])
+        ])
 
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -219,7 +218,7 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
         luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler))
-        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler))
+        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=300))
 
         # Wait for both tasks to complete
         results = await asyncio.gather(luminoso_task, vector_task)

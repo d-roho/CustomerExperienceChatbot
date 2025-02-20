@@ -93,3 +93,17 @@ class MotherDuckStore:
             return {'text': text, 'metadata': metadata}
         except Exception as e:
             raise RuntimeError(f"Failed to retrieve chunk: {str(e)}")
+
+    def fetch_all(self, index_name: str):
+        """Retrieve the whole index table"""
+        try:
+            run = f"""
+                SELECT * 
+                FROM "{index_name}"
+            """
+            print(run)
+            df = self.conn.execute(run).df()
+            return df
+        except Exception as e:
+            raise RuntimeError(f"Failed to retrieve table: {str(e)}")
+

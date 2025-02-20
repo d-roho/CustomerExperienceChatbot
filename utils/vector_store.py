@@ -295,3 +295,13 @@ class VectorStore:
         except Exception as e:
             print(f"Warning: Reranking failed: {str(e)}")
             return results
+
+    def fetch_all_reviews(self, index: str):
+        """Fetch all reviews from a MD table ."""
+        try:
+            reviews = self.db.fetch_all(self.index_name)
+        except Exception as e:
+            print(f"Warning: Table not retrieved: {str(e)}")
+
+        return reviews
+
