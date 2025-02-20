@@ -239,7 +239,53 @@ selected_tool = st.selectbox("Select Tool",
       ["Luminoso Stats", "Filter Search"],
       index=0)
 if selected_tool == "Luminoso Stats":
-    pass
+    st.subheader("Filter Parameters")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        selected_cities = st.multiselect(
+            "Select Cities",
+            ["Chicago", "New York", "Los Angeles"],
+            key="cities_select"
+        )
+        
+        selected_states = st.multiselect(
+            "Select States",
+            ["IL", "NY", "CA"],
+            key="states_select"
+        )
+        
+        selected_themes = st.multiselect(
+            "Select Themes",
+            [
+                "Exceptional Customer Service & Support",
+                "Store Ambiance & Try-On Experience",
+                "Product Durability & Quality Issues"
+            ],
+            key="themes_select"
+        )
+    
+    with col2:
+        start_month = st.number_input("Start Month", min_value=1, max_value=12, value=8, key="start_month")
+        start_year = st.number_input("Start Year", min_value=2020, max_value=2025, value=2024, key="start_year")
+        end_month = st.number_input("End Month", min_value=1, max_value=12, value=12, key="end_month")
+        end_year = st.number_input("End Year", min_value=2020, max_value=2025, value=2025, key="end_year")
+
+    if st.button("Fetch Stats", key="fetch_stats"):
+        if not any([selected_cities, selected_states, selected_themes]):
+            st.warning("Please select at least one filter parameter")
+        else:
+            filter_params = {
+                "cities": selected_cities,
+                "states": selected_states,
+                "themes": selected_themes,
+                "month_start": [start_month],
+                "year_start": [start_year],
+                "month_end": [end_month],
+                "year_end": [end_year],
+                "subsets": ["cities", "themes"] if selected_cities and selected_themes else []
+            }
+            st.json(filter_params)
 
 elif selected_tool == "Filter Search":
     pass
