@@ -199,7 +199,7 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
     except Exception as e:
         raise RuntimeError(f"Final response generation failed: {str(e)}")
 
-async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore) -> Dict:
+async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         # Initialize state
@@ -218,7 +218,7 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
         luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler))
-        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=300))
+        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=top_k))
 
         # Wait for both tasks to complete
         results = await asyncio.gather(luminoso_task, vector_task)
