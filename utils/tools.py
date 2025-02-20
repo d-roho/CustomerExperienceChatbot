@@ -37,6 +37,7 @@ class LuminosoStats:
     def fetch_drivers(self, client, filter):
         """Fetch drivers for given filters and concepts."""
         try:
+            start_time = time.time()
 
             def get_unix_time(month, year):
                 # Create a datetime object for the first day of the given month and year
@@ -126,9 +127,12 @@ class LuminosoStats:
                     filters.append(dict)
                     filters_exist = 1
 
+            filters_time = time.time() - start_time
+            print(f"Filters preparation time: {filters_time:.2f}s")
             print(filters)
             counter = 0
             themes = 1
+            api_start_time = time.time()
             if themes == 1:
                 print(drivers_exist)
                 for theme in drivers_exist:
@@ -183,6 +187,9 @@ class LuminosoStats:
 
                     # Rename the columns using the mapping
                     df = df.rename(columns=column_mapping)
+                    if counter == 0:
+                        api_time = time.time() - api_start_time
+                        print(f"First API call and processing time: {api_time:.2f}s")
                     print(df)
                     if counter == 0:
                         df_deep_copy = df.copy(deep=True)
@@ -242,6 +249,8 @@ class LuminosoStats:
                 print(df)
                 df_deep_copy = df.copy(deep=True)
 
+            total_time = time.time() - start_time
+            print(f"Total fetch_drivers execution time: {total_time:.2f}s")
             return df_deep_copy
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Drivers: {str(e)}")
@@ -249,6 +258,7 @@ class LuminosoStats:
     def fetch_sentiment(self, client, filter):
         """Fetch sentiment for given filters and concepts."""
         try:
+            start_time = time.time()
 
             def get_unix_time(month, year):
                 # Create a datetime object for the first day of the given month and year
@@ -338,8 +348,11 @@ class LuminosoStats:
                     filters.append(dict)
                     filters_exist = 1
 
+            filters_time = time.time() - start_time
+            print(f"Filters preparation time: {filters_time:.2f}s")
             print(filters)
             counter = 0
+            api_start_time = time.time()
             # themes = 0
             if themes == 1:
                 print(sentiments_exist)
@@ -430,6 +443,8 @@ class LuminosoStats:
                 print(df)
                 df_deep_copy = df.copy(deep=True)
 
+            total_time = time.time() - start_time
+            print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
             return df_deep_copy
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
