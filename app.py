@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time # Added import for time module
 from typing import Optional, Tuple, List, Dict, Any
 from utils.text_processor import TextProcessor
 from utils.vector_store import VectorStore
@@ -172,6 +173,7 @@ elif input_method == "Existing Vector Store":
                                       index=default_index)
         if st.button("Generate Themes"):
             with st.spinner("Searching..."):
+                start_time = time.time() #Start timer
                 try:
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                     # Generate themes using theme_workflow
@@ -202,7 +204,8 @@ elif input_method == "Existing Vector Store":
                     )
 
                     # Display results
-                    st.subheader("Theme Generation Results")
+                    execution_time = time.time() - start_time #Stop timer
+                    st.subheader(f"Theme Generation Results (Execution time: {execution_time:.2f}s)")
                     with st.expander("Explore Workflow"):
                         st.subheader(f"## Preliminary Themes  w/ Sentiment")
                         st.json(response['preliminary_themes'], expanded=True)
@@ -237,6 +240,7 @@ if query:
     if st.button("Basic RAG Search"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
+            start_time = time.time() #Start timer
             try:
                 # Search for relevant chunks
                 print(selected_index)
@@ -255,7 +259,8 @@ if query:
                         query, results, model, max_tokens=max_tokens)
 
                     # Display results
-                    st.subheader("Generated Response")
+                    execution_time = time.time() - start_time #Stop timer
+                    st.subheader(f"Generated Response (Execution time: {execution_time:.2f}s)")
                     st.code(response, language="text")
 
                     st.subheader("Context Used")
@@ -274,6 +279,7 @@ if query:
 
         st.session_state.last_query = query
         with st.spinner("Searching..."):
+            start_time = time.time() #Start timer
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
                     filter = json.load(file)
@@ -287,14 +293,15 @@ if query:
 
                 st.subheader("Test Filter")
                 st.json(filter)
-            
+
                 st.subheader("Drivers")
                 st.dataframe(drivers)
 
                 st.subheader("Sentiment")
                 st.dataframe(sentiment)
 
-                st.success('Done')
+                execution_time = time.time() - start_time #Stop timer
+                st.success(f'Done (Execution time: {execution_time:.2f}s)')
 
             except Exception as e:
                 st.error(f"Search failed: {str(e)}")
@@ -302,6 +309,7 @@ if query:
     if st.button("Fetch Filtered Reviews"):
         st.session_state.last_query = query
         with st.spinner("Searching..."):
+            start_time = time.time() #Start timer
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
                     filter = json.load(file)
@@ -324,7 +332,8 @@ if query:
                         query, results, model, max_tokens=max_tokens)
 
                     # Display results
-                    st.subheader("Generated Response")
+                    execution_time = time.time() - start_time #Stop timer
+                    st.subheader(f"Generated Response (Execution time: {execution_time:.2f}s)")
                     st.code(response, language="text")
 
                     st.subheader("Context Used")
@@ -338,6 +347,7 @@ if query:
     if st.button("Agentic Search"):
         st.session_state.last_query = query
         with st.spinner("Processing analysis workflow..."):
+            start_time = time.time() #Start timer
             try:
                 import asyncio
                 response = asyncio.run(
@@ -367,6 +377,8 @@ if query:
                         st.markdown(
                             f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
                         )
+                execution_time = time.time() - start_time #Stop timer
+                st.success(f'Done (Execution time: {execution_time:.2f}s)')
 
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
