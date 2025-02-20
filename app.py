@@ -236,40 +236,47 @@ if 'response' not in st.session_state:
 # Query interface
 st.header("Test the Tools")
 selected_tool = st.selectbox("Select Tool",
-      ["Luminoso Stats", "Filter Search"],
+      ["Luminoso Stats API", "RAG Retriver w/ Metadata Filter"],
       index=0)
-if selected_tool == "Luminoso Stats":
+if selected_tool == "Luminoso Stats API":
     st.subheader("Filter Parameters")
     col1, col2 = st.columns(2)
     
-    with col1:
+    with col2:
         selected_cities = st.multiselect(
-            "Select Cities",
-            ["Chicago", "New York", "Los Angeles"],
+            "Cities",
+            [Austin, Bellevue, Bethesda, Boston, Brooklyn, Chestnut Hill, Chicago, Denver, Houston, Los Angeles, Miami, Montreal, Nashville, New York, North York, Philadelphia, San Diego, Seattle, Short Hills, Skokie, Toronto, Vancouver, West Vancouver],
             key="cities_select"
         )
         
         selected_states = st.multiselect(
-            "Select States",
-            ["IL", "NY", "CA"],
+            "States",
+            [NY , CA , TX , BC , MA , QC , ON , IL , WA , PA , MD , TN , FL , NJ , CO],
             key="states_select"
         )
         
-        selected_themes = st.multiselect(
+        selected_location = st.multiselect(
+            "Select Store Locations",
+            [43 Spring St, New York, NY | 8404 Melrose Ave, Los Angeles, CA | 11700 Domain Blvd Suite 126, Austin, TX | 2166 W 4th Ave, Vancouver, BC, Canada | 126 Newbury St, Boston, MA | 1410 Peel St, Montreal, Quebec, Canada | 3401 Dufferin St, North York, ON, Canada | 940 W Randolph St, Chicago, IL, United States | 888 Westheimer Rd Suite 158, Houston, TX | 4545 La Jolla Village Dr Suite C-12, San Diego, CA | 2621 NE University Village St, Seattle, WA | 107 N 6th St, Brooklyn, NY | 144 5th Ave, New York, NY | 1525 Walnut St, Philadelphia, PA | 7247 Woodmont Ave, Bethesda, MD | 64 Ossington Ave, Toronto, ON, Canada | 2803 12th Ave S, Nashville, TN | 219 NW 25th St, Miami, FL | 925 Main St Unit H3, West Vancouver, BC, Canada | 124 Bellevue Square Unit L124, Bellevue, WA | 1200 Morris Tpke, Short Hills, NJ, United States | 3000 E 1st Ave #144, Denver, CO | 4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States | 737 Dunsmuir St, Vancouver, BC, Canada | 27 Boylston St, Chestnut Hill, MA]
+,
+            key="location_select"
+        )
+
+        elected_themes = st.multiselect(
             "Select Themes",
-            [
-                "Exceptional Customer Service & Support",
-                "Store Ambiance & Try-On Experience",
-                "Product Durability & Quality Issues"
-            ],
+            [Exceptional Customer Service & Support , Poor Service & Long Wait Times , Product Durability & Quality Issues , Aesthetic Design & Visual Appeal , Professional Piercing Services & Environment , Store Ambiance & Try-On Experience , Price & Policy Transparency , Store Organization & Product Selection , Complex Returns & Warranty Handling , Communication & Policy Consistency , Value & Price-Quality Assessment , Affordable Luxury & Investment Value , Online Shopping Experience , Inventory & Cross-Channel Integration],
             key="themes_select"
         )
     
-    with col2:
-        start_month = st.number_input("Start Month", min_value=1, max_value=12, value=8, key="start_month")
-        start_year = st.number_input("Start Year", min_value=2020, max_value=2025, value=2024, key="start_year")
+    with col1:
+        start_month = st.number_input("Start Month", min_value=1, max_value=12, value=1, key="start_month")
+        start_year = st.number_input("Start Year", min_value=2019, max_value=2025, value=2019, key="start_year")
         end_month = st.number_input("End Month", min_value=1, max_value=12, value=12, key="end_month")
-        end_year = st.number_input("End Year", min_value=2020, max_value=2025, value=2025, key="end_year")
+        end_year = st.number_input("End Year", min_value=2019, max_value=2025, value=2025, key="end_year")
+
+        min_rating = st.number_input("Minimum Rating", min_value=1, max_value=5, value=1, key="min_rating")
+        max_rating = st.number_input("Minimum Rating", min_value=1, max_value=5, value=5, key="max_rating")
+
 
     if st.button("Fetch Stats", key="fetch_stats"):
         if not any([selected_cities, selected_states, selected_themes]):
