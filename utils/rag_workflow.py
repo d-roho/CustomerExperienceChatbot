@@ -63,72 +63,85 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     except Exception as e:
         raise RuntimeError(f"Filter generation failed: {str(e)}")
 
-async def get_luminoso_stats(state: State, llm_handler: Anthropic) -> State:
+async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1, summaries: 1) -> State:
     """Get statistics from Luminoso API based on filters."""
     try:
         luminoso_stats = LuminosoStats()
         client = luminoso_stats.initialize_client()
 
-        # Get both drivers and sentiment analysis
-        drivers = luminoso_stats.fetch_drivers(client, state["filters"])
-        sentiment = luminoso_stats.fetch_sentiment(client, state["filters"])
-
+        if themes == 0:
+            # remove themes for quicker processing
+            filter = state['filters']
+            filter['themes'] = []
+            drivers = luminoso_stats.fetch_drivers(client, filter)
+            sentiment = luminoso_stats.fetch_sentiment(client, filter)
+            
+        else:
+            # Get both drivers and sentiment analysis
+            drivers = luminoso_stats.fetch_drivers(client, state["filters"])
+            sentiment = luminoso_stats.fetch_sentiment(client, state["filters"])
+    
         state["luminoso_results"] = {
             "drivers": drivers.to_dict(),
             "sentiment": sentiment.to_dict()
 }
 
-        response = llm_handler.anthropic.messages.create(
-            model='claude-3-5-sonnet-20241022',
-            max_tokens=2000,
-            temperature=0,
-            system="""
-            You are an expert customer experience analyst that gathers insights from aggregate rating drivers data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
+        if summaries == 1:
+            response = llm_handler.anthropic.messages.create(
+                model='claude-3-5-sonnet-20241022',
+                max_tokens=2000,
+                temperature=0,
+                system="""
+                You are an expert customer experience analyst that gathers insights from aggregate rating drivers data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
+    
+                In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
+    
+                Dataset - A collection of themes (aspects of customer experience) and their impact on customer ratings. 
+    
+                Theme Name: Name of the aspect
+                Normalized Relevance to Subset: The proportion of the total number of customers that this theme is relevant to (0-1). This is an indicator of pervasiveness of the theme.
+                Matches Found in Subset: Number of reviews that include this theme
+                Impact on Score: effect of this theme on the customer ratings (-1 to +1)
+                Impact Confidence Level: The confidence level of the impact on score. This is an indicator of the reliability of the impact on score. (0-1)
+                Average Score: The average rating of the customer reviews that include this theme. (0-1)
+                Baseline Score: The average rating of all customers.(0-1)            
+    
+            """,
+                messages=[{
+                    "role": "user",
+                    "content": f"User Query: {state['query']} \n Drivers Dataset {json.dumps(state['luminoso_results']['drivers'], indent=2)}"
+                    }])
+    
+            state["driver_summary"] = response.content[0].text
+    
+            response = llm_handler.anthropic.messages.create(
+                model='claude-3-5-sonnet-20241022',
+                max_tokens=2000,
+                temperature=0,
+                system="""
+                You are an expert customer experience analyst that gathers insights from aggregate sentiment data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
+    
+                In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
+    
+                Dataset - A collection of themes (aspects of customer experience) and customer sentiment around those themes. 
+    
+                Theme Name: Name of the aspect
+                Proportion of Subset With Theme: The proportion of the total reviews that include this theme (0-1). This is an indicator of pervasiveness of the theme.)
+                Proportion of Positive Mentions: The proportion theme mentions made with a positive sentiment (0-1)
+                Proportion of Neutral Mentions: The proportion theme mentions made with a neutral sentiment (0-1)
+                Proportion of NEgative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)s
+            """,
+                messages=[{
+                    "role": "user",
+                    "content": f"User Query: {state['query']} \n Sentiment Dataset {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
+                    }])
+    
+            print(response.content[0].text)
+            state["sentiment_summary"] = response.content[0].text
+        else:
+            state["driver_summary"] = drivers.to_markdown()
+            state["driver_summary"] = sentiment.to_markdown()
 
-            In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
-
-            Dataset - A collection of themes (aspects of customer experience) and their impact on customer ratings. 
-
-            Theme Name: Name of the aspect
-            Normalized Relevance to Subset: The proportion of the total number of customers that this theme is relevant to (0-1). This is an indicator of pervasiveness of the theme.
-            Matches Found in Subset: Number of reviews that include this theme
-            Impact on Score: effect of this theme on the customer ratings (-1 to +1)
-            Impact Confidence Level: The confidence level of the impact on score. This is an indicator of the reliability of the impact on score. (0-1)
-            Average Score: The average rating of the customer reviews that include this theme. (0-1)
-            Baseline Score: The average rating of all customers.(0-1)            
-
-        """,
-            messages=[{
-                "role": "user",
-                "content": f"User Query: {state['query']} \n Drivers Dataset {json.dumps(state['luminoso_results']['drivers'], indent=2)}"
-                }])
-
-        state["driver_summary"] = response.content[0].text
-
-        response = llm_handler.anthropic.messages.create(
-            model='claude-3-5-sonnet-20241022',
-            max_tokens=2000,
-            temperature=0,
-            system="""
-            You are an expert customer experience analyst that gathers insights from aggregate sentiment data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
-
-            In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
-
-            Dataset - A collection of themes (aspects of customer experience) and customer sentiment around those themes. 
-
-            Theme Name: Name of the aspect
-            Proportion of Subset With Theme: The proportion of the total reviews that include this theme (0-1). This is an indicator of pervasiveness of the theme.)
-            Proportion of Positive Mentions: The proportion theme mentions made with a positive sentiment (0-1)
-            Proportion of Neutral Mentions: The proportion theme mentions made with a neutral sentiment (0-1)
-            Proportion of NEgative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)s
-        """,
-            messages=[{
-                "role": "user",
-                "content": f"User Query: {state['query']} \n Sentiment Dataset {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
-                }])
-
-        print(response.content[0].text)
-        state["sentiment_summary"] = response.content[0].text
 
         return state
     except Exception as e:
@@ -252,6 +265,60 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
         state["execution_times"]["total_workflow"] = time.time() - workflow_start
 
         return state
+    except Exception as e:
+        raise RuntimeError(f"Query processing failed: {str(e)}")
+
+async def process_query_lite(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000, model: str = "claude-3-5-sonnet-20241022", themes: int = 0, summaries: int = 1) -> Dict:
+    """Process a query through the workflow and return the final response."""
+    try:
+        import time
+        workflow_start = time.time()
+
+        # Initialize state
+        state = State(
+            query=query,
+            filters={},
+            luminoso_results={},
+            vector_results={},
+            final_response="",
+            driver_summary="",
+            sentiment_summary="",
+            max_tokens=max_tokens,
+            model=model,
+            execution_times={}
+        )
+
+        # Step 1: Generate filters
+        filter_start = time.time()
+        state = await generate_filters(state, llm_handler)
+        state["execution_times"]["filter_generation"] = time.time() - filter_start
+
+        # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
+        luminoso_task = asyncio.create_task(get_luminoso_stats(state, llm_handler, themes=themes, summaries=summaries))
+        vector_task = asyncio.create_task(get_vector_results(state, vector_store, llm_handler, top_k=top_k))
+
+        # Wait for both tasks to complete
+        parallel_start = time.time()
+        results = await asyncio.gather(luminoso_task, vector_task)
+        parallel_time = time.time() - parallel_start
+
+        # Record execution times
+        state["execution_times"]["parallel_tasks"] = parallel_time
+
+        # Merge results back into state
+        state["luminoso_results"] = results[0]["luminoso_results"]
+        state["vector_results"] = results[1]["vector_results"]
+
+        # Step 4: Generate final response
+        final_response_start = time.time()
+        state = await generate_final_response(state, llm_handler)
+        state["execution_times"]["final_response"] = time.time() - final_response_start
+
+        # Record total workflow time
+        state["execution_times"]["total_workflow"] = time.time() - workflow_start
+
+        return state
+
 
     except Exception as e:
         raise RuntimeError(f"Query processing failed: {str(e)}")

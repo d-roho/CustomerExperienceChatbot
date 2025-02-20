@@ -8,7 +8,7 @@ from utils.llm import LLMHandler
 import pandas as pd
 from pinecone import ServerlessSpec
 import json
-from utils.rag_workflow import process_query
+from utils.rag_workflow import process_query, process_query_lite
 from utils.theme_workflow import process_themes
 import asyncio
 from datetime import datetime
@@ -517,24 +517,30 @@ elif selected_tool == "Metadata Filter RAG Search":
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
+lite = st.checkbox("Run Lite version (No Themes)", False)
 if st.button("Run Workflow"):
     st.session_state.last_query = query
     with st.spinner("Processing analysis workflow..."):
         start_time = time.time()  #Start timer
         try:
             import asyncio
-            response = asyncio.run(
-                process_query(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
-
+            if lite:
+                response = asyncio.run(
+                    process_query_lite(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
+                lite_execution = 1
+            else:
+                response = asyncio.run(
+                    process_query(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
+    
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
-                st.subheader("Execution Times")
+                st.subheader(f"Execution Times (Lite: {lite_execution == 1})")
                 for step, duration in response['execution_times'].items():
                     st.metric(f"{step.replace('_', ' ').title()}", f"{duration:.2f}s")
                     
-                st.subheader(f"## Query: \n {response['query']}")
-                st.subheader(f"## Generated Filter: \n")
+                st.subheader(f"Query: \n {response['query']}")
+                st.subheader(f"Generated Filter: \n")
                 st.json(response['filters'], expanded=True)
                 st.subheader(f"Drivers Data \n")
                 st.dataframe(response['luminoso_results']['drivers'])
@@ -548,11 +554,11 @@ if st.button("Run Workflow"):
             with st.expander(
                     f"{len(response['vector_results'])} Reviews Retrieved"
             ):
-                st.subheader(f"## Total Reviews : \n {response['query']}")
+                st.subheader(f"Total Reviews : \n Query:{response['query']}")
                 for i, curr_rev in enumerate(
                         response['vector_results'][:50]):
                     st.markdown(
-                        f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
+                        f"Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
                     )
             execution_time = time.time() - start_time  #Stop timer
             st.success(f'Done (Execution time: {execution_time:.2f}s)')

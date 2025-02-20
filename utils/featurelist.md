@@ -1,5 +1,5 @@
-Demos: Luminoso, Filter Reviews, Agentic Flow Tuning | Subseting, Chart ADA    
-
+Demos: Stats Report Validation/Tuning, Reranking, Agentic Flow Tuning | Subseting, Chart ADA    
+- make a lightweight version
 Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
 
 
