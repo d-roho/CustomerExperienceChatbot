@@ -1,3 +1,4 @@
+from requests.utils import proxy_bypass_registry
 import streamlit as st
 import os
 import time # Added import for time module
@@ -231,6 +232,18 @@ if 'results' not in st.session_state:
     st.session_state.results = None
 if 'response' not in st.session_state:
     st.session_state.response = None
+
+# Query interface
+st.header("Test the Tools")
+selected_tool = st.selectbox("Select Tool",
+      ["Luminoso Stats", "Filter Search"],
+      index=0)
+if selected_tool == "Luminoso Stats":
+    pass
+
+elif selected_tool == "Filter Search":
+    pass
+
 
 # Query interface
 st.header("Query the Reviews")
