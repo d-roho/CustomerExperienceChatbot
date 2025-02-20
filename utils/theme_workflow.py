@@ -102,7 +102,10 @@ Return only valid JSON in the following format:
                 {json.dumps(state['preliminary_themes'])}"""
                 }])
         print(response.content[0].text)
-        state["refined_themes"] = json.loads(response.content[0].text)
+        result = json.loads(response.content[0].text)
+        if not isinstance(result, dict) or 'refined_themes' not in result:
+            raise ValueError("Invalid refined themes format")
+        state["refined_themes"] = result
         return state
     except Exception as e:
         raise RuntimeError(f"Themes-Sentiment generation failed: {str(e)}")
@@ -111,8 +114,14 @@ Return only valid JSON in the following format:
 async def generate_final_response(state: State, llm_handler: LLMHandler) -> State:
     """Generate final response combining all results."""
     try: 
-        THEMES_LIST = state['refined_themes']['refined_themes']  # Updated to match the JSON structure
-        THEMES_LIST = '\n'.join(THEMES_LIST)
+        if not isinstance(state['refined_themes'], dict) or 'refined_themes' not in state['refined_themes']:
+            raise ValueError("Invalid refined themes format in state")
+
+        themes_list = state['refined_themes']['refined_themes']
+        if not isinstance(themes_list, list):
+            raise ValueError("Refined themes must be a list")
+
+        themes_text = '\n'.join(str(theme) for theme in themes_list)
         df = pd.DataFrame.from_dict(state['sample_df'])
         df['subthemes'] = ''
 
@@ -126,7 +135,7 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
                 system=f"""Analyze this review and output JSON with the following fields:
             Here are the combined and mutually exclusive themes:
 
-            {THEMES_LIST}
+            {themes_text}
 
 
             I will provide you with a sample review. Go through these themes and do the following task
