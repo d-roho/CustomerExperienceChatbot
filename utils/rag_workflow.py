@@ -237,7 +237,7 @@ async def generate_final_response(state: State,
             for idx, c in enumerate(state['vector_results'])
         ])
 
-        
+
         if reviews_summary == 1:
             response = llm_handler.anthropic.messages.create(
                 model="claude-3-5-sonnet-20241022",
@@ -264,7 +264,7 @@ async def generate_final_response(state: State,
             state["reviews_summary"] = response.content[0].text
             context_text = response.content[0].text
             print(context_text)
-  
+
         stats_summary = f"""
         Drivers Data Analysis:
         {state['driver_summary']}
@@ -380,7 +380,7 @@ async def process_query(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler, reviews_summary)
+        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
@@ -457,7 +457,7 @@ async def process_query_lite(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler, reviews_summary)
+        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
