@@ -10,9 +10,7 @@ import json
 from utils.rag_workflow import process_query
 from utils.theme_workflow import process_themes
 import asyncio
-
-
-
+from datetime import datetime
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -75,8 +73,8 @@ st.sidebar.title("Parameters")
 # chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 # chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
 top_k = st.sidebar.slider("Number of Reviews", 1, 300, 5)
-use_reranking = st.sidebar.checkbox("Use Reranking", True)
 max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 2000)
+use_reranking = st.sidebar.checkbox("Use Reranking", True)
 
 # Main interface
 st.title("Review Analysis Pipeline")
@@ -105,12 +103,12 @@ if input_method == "File Upload":
                 st.info(f"Deleted existing index: {index_name}")
 
             # Create new index
-            vector_store.pc.create_index(
-                name=index_name,
-                dimension=vector_store.dimension,
-                metric='cosine',
-                spec=ServerlessSpec(cloud='aws',
-                                    region=vector_store.environment))
+            vector_store.pc.create_index(name=index_name,
+                                         dimension=vector_store.dimension,
+                                         metric='cosine',
+                                         spec=ServerlessSpec(
+                                             cloud='aws',
+                                             region=vector_store.environment))
             st.success(f"Created new index: {index_name}")
             vector_store.index = vector_store.pc.Index(index_name)
             vector_store.index_name = index_name
@@ -175,8 +173,33 @@ elif input_method == "Existing Vector Store":
         if st.button("Generate Themes"):
             with st.spinner("Searching..."):
                 try:
-                    # Generate themes using theme_workflow 
-                    response = asyncio.run(process_themes(selected_index, llm_handler, vector_store))
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    # Generate themes using theme_workflow
+                    response = asyncio.run(
+                        process_themes(selected_index, llm_handler,
+                                       vector_store))
+                except Exception as e:
+                    st.error(f"Failed to generate themes: {str(e)}")
+
+                try:
+                    # save results
+                    output_file = f'attached_assets/saved_output/reviews_tagged_{timestamp}.csv'
+                    df = pd.DataFrame.from_dict(response['sample_df'])
+                    df.to_csv(output_file, index=False)
+
+                    with open(
+                            f"attached_assets/saved_output/preliminary_themes_{timestamp}.json",
+                            "w") as outfile:
+                        json.dump(response['preliminary_themes'], outfile)
+
+                    with open(
+                            f"attached_assets/saved_output/refined_themes_{timestamp}.json",
+                            "w") as outfile:
+                        json.dump(response['refined_themes'], outfile)
+
+                    print(
+                        f"Output saved to attached_assets/saved_output | Timestamp: {timestamp}"
+                    )
 
                     # Display results
                     st.subheader("Theme Generation Results")
@@ -185,13 +208,11 @@ elif input_method == "Existing Vector Store":
                         st.json(response['preliminary_themes'], expanded=True)
                         st.subheader(f"Merged & Refine Themes \n")
                         st.json(response['refined_themes'], expanded=True)
-                        st.subheader(f"Reviews tagged with Themes and Subthemes")
-                        st.dataframe(pd.DataFrame.from_dict(response['sample_df'][['Text', 'subthemes']]))
+                        st.subheader(
+                            f"Reviews tagged with Themes and Subthemes")
+                        st.dataframe(df[['Text', 'Theme_Subthemes']])
                 except Exception as e:
-                    st.error(f"Failed to generate themes: {str(e)}")
-                
-            
-            
+                    st.error(f"Failed to output results: {str(e)}")
 
         if selected_index != vector_store.index_name:
             vector_store.index = vector_store.pc.Index(selected_index)
@@ -250,22 +271,23 @@ if query:
 
         lumin_class = LuminosoStats()
         lumin_client = lumin_class.initialize_client()
-        
+
         st.session_state.last_query = query
         with st.spinner("Searching..."):
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
-                    filter = json.load(file)  
+                    filter = json.load(file)
                 print(filter)
-                # Search for relevant chunks
-                print(selected_index)
 
                 # fetch drivers
                 drivers = lumin_class.fetch_drivers(lumin_client, filter)
                 sentiment = lumin_class.fetch_sentiment(lumin_client, filter)
 
-
                 # # Display results
+
+                st.subheader("Test Filter")
+                st.json(filter)
+            
                 st.subheader("Drivers")
                 st.dataframe(drivers)
 
@@ -282,14 +304,15 @@ if query:
         with st.spinner("Searching..."):
             try:
                 with open('attached_assets/test_filter.json', 'r') as file:
-                    filter = json.load(file)  
+                    filter = json.load(file)
                 print(filter)
                 # Search for relevant chunks
                 print(selected_index)
-                results = vector_store.filter_search(filter, query,
-                                              llm_handler,
-                                              top_k=top_k,
-                                              index_name=selected_index)
+                results = vector_store.filter_search(filter,
+                                                     query,
+                                                     llm_handler,
+                                                     top_k=top_k,
+                                                     index_name=selected_index)
 
                 # Rerank if enabled
                 if use_reranking and results:
@@ -313,11 +336,12 @@ if query:
                 st.error(f"Search failed: {str(e)}")
 
     if st.button("Agentic Search"):
-        st.session_state.last_query = query   
+        st.session_state.last_query = query
         with st.spinner("Processing analysis workflow..."):
             try:
                 import asyncio
-                response = asyncio.run(process_query(query, llm_handler, vector_store))
+                response = asyncio.run(
+                    process_query(query, llm_handler, vector_store))
 
                 st.subheader("Analysis Results")
                 st.markdown(response['final_response'])
@@ -333,12 +357,17 @@ if query:
                     st.dataframe(response['luminoso_results']['sentiment'])
                     st.subheader(f"Sentiment Summary \n")
                     st.markdown(response['sentiment_summary'])
-                
-                with st.expander(f"{len(response['vector_results'])} Reviews Retrieved"):
+
+                with st.expander(
+                        f"{len(response['vector_results'])} Reviews Retrieved"
+                ):
                     st.subheader(f"## Total Reviews : \n {response['query']}")
-                    for i, curr_rev in enumerate(response['vector_results'][:50]):
-                        st.markdown(f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}")
-                
+                    for i, curr_rev in enumerate(
+                            response['vector_results'][:50]):
+                        st.markdown(
+                            f"### Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
+                        )
+
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
 # Footer

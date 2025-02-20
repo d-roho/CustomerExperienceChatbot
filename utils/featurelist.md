@@ -1,12 +1,7 @@
-Demos: Theme Generation | Luminoso, Filter Reviews, Agentic Flow | Chart ADA    
+Demos: Luminoso, Filter Reviews, Agentic Flow | Subseting, Chart ADA    
 
 Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
 
-Theme Generation: 
-- Themes
-- Themes Better
-- Subthemes on random 5
-- Output workflow and save to CSV
 
 Tool # 1 Luminoso API
   - Time it (T3)
@@ -30,7 +25,7 @@ Prompts and Testing
 
 Auto Data Analysis
 
-DEMO - Replit (MULTIPLE users test with Aryan) + Code Breakdown + Immpact + Challenges & Opportunities  
+DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Opportunities  
 
 
 
