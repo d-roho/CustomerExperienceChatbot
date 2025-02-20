@@ -518,7 +518,8 @@ elif selected_tool == "Metadata Filter RAG Search":
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
-lite = st.checkbox("Run Lite version (No Themes)", False)
+lite = st.checkbox("Run Lite version (No Themes)", True)
+single_summary = st.checkbox("Generate single summary for Luminoso Stats", True)
 if st.button("Run Workflow"):
     st.session_state.last_query = query
     with st.spinner("Processing analysis workflow..."):
@@ -533,7 +534,7 @@ if st.button("Run Workflow"):
                                        top_k=top_k,
                                        max_tokens=max_tokens,
                                        model=model,
-                                       reranking=use_reranking))
+                                       reranking=use_reranking, summaries = single_summary))
                 lite_execution = 1
             else:
                 response = asyncio.run(
@@ -543,12 +544,12 @@ if st.button("Run Workflow"):
                                   top_k=top_k,
                                   max_tokens=max_tokens,
                                   model=model,
-                                  reranking=use_reranking))
+                                  reranking=use_reranking, summaries = single_summary))
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
-                st.subheader(f"Execution Times (Lite: {lite_execution == 1})")
+                st.subheader(f"Execution Times (Lite: {lite_execution == 1} | Single Summary: {single_summary})")
                 for step, duration in response['execution_times'].items():
                     st.metric(f"{step.replace('_', ' ').title()}",
                               f"{duration:.2f}s")
@@ -556,15 +557,23 @@ if st.button("Run Workflow"):
                 st.subheader(f"Query: \n {response['query']}")
                 st.subheader(f"Generated Filter: \n")
                 st.json(response['filters'], expanded=True)
-                st.subheader(f"Drivers Data \n")
-                st.dataframe(response['luminoso_results']['drivers'])
-                st.subheader(f"Drivers Summary \n")
-                st.markdown(response['driver_summary'])
-                st.subheader(f"Sentiment Data \n")
-                st.dataframe(response['luminoso_results']['sentiment'])
-                st.subheader(f"Sentiment Summary \n")
-                st.markdown(response['sentiment_summary'])
+                if single_summary == 0:
+                    st.subheader(f"Drivers Data \n")
+                    st.dataframe(response['luminoso_results']['drivers'])
+                    st.subheader(f"Drivers Summary \n")
+                    st.markdown(response['driver_summary'])
+                    st.subheader(f"Sentiment Data \n")
+                    st.dataframe(response['luminoso_results']['sentiment'])
+                    st.subheader(f"Sentiment Summary \n")
+                    st.markdown(response['sentiment_summary'])
 
+                else:
+                    st.subheader(f"Drivers Data \n")
+                    st.dataframe(response['luminoso_results']['drivers'])
+                    st.subheader(f"Sentiment Data \n")
+                    st.dataframe(response['luminoso_results']['sentiment'])
+                    st.subheader(f"Stats Summary \n")
+                    st.markdown(response['driver_summary'])
             with st.expander(
                     f"{len(response['vector_results'])} Reviews Retrieved"):
                 st.subheader(f"Total Reviews : \n Query:{response['query']}")

@@ -283,13 +283,10 @@ class VectorStore:
             # Prepare pairs for reranking
             pairs = []
             for result in results:
-                if isinstance(result, dict) and 'text' in result and 'header' in result:
-                    text = f"{result['header']}\n{result['text']}"
-                    pairs.append([query, text])
+                print(result)
+                text = f"{result['header']}\n{result['text']}"
+                pairs.append([query, text])
             
-            if not pairs:
-                return results
-                
             scores = model.predict(pairs)
 
             # Update scores

@@ -1,4 +1,4 @@
-Demos: Stats Report Validation/Tuning, Reranking, Agentic Flow Tuning | Subseting, Chart ADA    
+Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA    
 - make a lightweight version
 Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
 
@@ -45,4 +45,8 @@ Bottlenecks:
   - no filter - same
   - filter test_json NY/Chicago/LA question - ~3s Pinecone Retrieval | ~5s Reranking | ~8s LLM call
   - Cut time in half (30s to 15s)
-  
+
+
+Jose:
+- Speed
+- Deployment

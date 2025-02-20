@@ -56,6 +56,8 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
         'states': [NY , CA , TX , BC , MA , QC , ON , IL , WA , PA , MD , TN , FL , NJ , CO],
         'themes':  [Exceptional Customer Service & Support , Poor Service & Long Wait Times , Product Durability & Quality Issues , Aesthetic Design & Visual Appeal , Professional Piercing Services & Environment, Store Ambiance & Try-On Experience , Price & Policy Transparency , Store Organization & Product Selection , Complex Returns & Warranty Handling , Communication & Policy Consistency , Value & Price-Quality Assessment , Affordable Luxury & Investment Value , Online Shopping Experience , Inventory & Cross-Channel Integration]
         'subsets': Go through the given query and find out all the fields that can be used for comparison with other subsets. These should be selected from the earlier used fields and should be highly relevant. You can give multiple fields if necessary. Use from these (cities, rating_min, rating_max, month_start, year_start, month_end, year_end, location, states, themes)
+
+        Current Date in February 2025 
         """,
             messages=[{
                 "role": "user",
@@ -69,7 +71,7 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
 
 
 async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
-                             summaries: 1) -> State:
+                             summaries: 0) -> State:
     """Get statistics from Luminoso API based on filters."""
     try:
         luminoso_start = time.time()
@@ -94,13 +96,13 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
             "sentiment": sentiment.to_dict()
         }
 
-        if summaries == 1:
+        if summaries == 0:
             response = llm_handler.anthropic.messages.create(
                 model='claude-3-5-sonnet-20241022',
                 max_tokens=2000,
                 temperature=0,
                 system="""
-                You are an expert customer experience analyst that gathers insights from aggregate rating drivers data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
+                You are an expert customer experience analyst that gathers insights from aggregate rating drivers data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query. Assume the data provided is for the date and locations etc. asked by the user
     
                 In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
     
@@ -129,7 +131,7 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
                 max_tokens=2000,
                 temperature=0,
                 system="""
-                You are an expert customer experience analyst that gathers insights from aggregate sentiment data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query.
+                You are an expert customer experience analyst that gathers insights from aggregate sentiment data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query. Assume the data provided is for the date and locations etc. asked by the user
     
                 In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
     
@@ -151,8 +153,41 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
             print(response.content[0].text)
             state["sentiment_summary"] = response.content[0].text
         else:
-            state["driver_summary"] = drivers.to_markdown()
-            state["driver_summary"] = sentiment.to_markdown()
+            response = llm_handler.anthropic.messages.create(
+                model='claude-3-5-sonnet-20241022',
+                max_tokens=2000,
+                temperature=0,
+                system="""
+                You are an expert customer experience analyst that gathers insights from aggregate data. Your task is to analyze the following data and make a thorough summary to be used to understand the overall customer experience. Align your summary with the User Query so as to cover everything that may be required for answering the query. Assume the data provided is for the date and locations etc. asked by the user
+
+                In your analysis, Be sure to include statistics to back up your analysis. Here is an explanation of the data:
+
+Drivers Dataset - A collection of themes (aspects of customer experience) and their impact on customer ratings. 
+
+Theme Name: Name of the aspect
+Normalized Relevance to Subset: The proportion of the total number of customers that this theme is relevant to (0-1). This is an indicator of pervasiveness of the theme.
+Matches Found in Subset: Number of reviews that include this theme
+Impact on Score: effect of this theme on the customer ratings (-1 to +1)
+Impact Confidence Level: The confidence level of the impact on score. This is an indicator of the reliability of the impact on score. (0-1)
+Average Score: The average rating of the customer reviews that include this theme. (0-1)
+Baseline Score: The average rating of all customers.(0-1)            
+
+                Sentiment Dataset - A collection of themes (aspects of customer experience) and customer sentiment around those themes. 
+
+                Theme Name: Name of the aspect
+                Proportion of Subset With Theme: The proportion of the total reviews that include this theme (0-1). This is an indicator of pervasiveness of the theme.)
+                Proportion of Positive Mentions: The proportion theme mentions made with a positive sentiment (0-1)
+                Proportion of Neutral Mentions: The proportion theme mentions made with a neutral sentiment (0-1)
+                Proportion of Negative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)s
+            """,
+                messages=[{
+                    "role":
+                    "user",
+                    "content":
+                    f"User Query: {state['query']} \n Drivers Dataset\n {json.dumps(state['luminoso_results']['drivers'], indent=2)} \n Sentiment Dataset\n {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
+                }])
+
+            state["driver_summary"] = response.content[0].text
 
         state["execution_times"]["luminoso_stats"] = time.time(
         ) - luminoso_start
@@ -161,8 +196,11 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
         raise RuntimeError(f"Luminoso stats retrieval failed: {str(e)}")
 
 
-async def get_vector_results(state: State, vector_store: VectorStore,
-                             llm_handler: LLMHandler, top_k: int, reranking: int = 1) -> State:
+async def get_vector_results(state: State,
+                             vector_store: VectorStore,
+                             llm_handler: LLMHandler,
+                             top_k: int,
+                             reranking: int = 1) -> State:
     """Get relevant reviews from vector store based on filters."""
     try:
         results = vector_store.filter_search(
@@ -173,8 +211,10 @@ async def get_vector_results(state: State, vector_store: VectorStore,
             index_name='reviews-csv-main')
 
         state["vector_results"] = results
+        print(results)
         if reranking == 1:
-            reranked_results = vector_store.rerank_results(results, state['query'])
+            reranked_results = vector_store.rerank_results(
+                state['query'], results)
             state["vector_results"] = reranked_results
             print(reranked_results)
         return state
@@ -183,7 +223,8 @@ async def get_vector_results(state: State, vector_store: VectorStore,
 
 
 async def generate_final_response(state: State,
-                                  llm_handler: LLMHandler) -> State:
+                                  llm_handler: LLMHandler,
+                                  summaries: int = 0) -> State:
     """Generate final response combining all results."""
     try:
         vector_start = time.time()
@@ -195,13 +236,26 @@ async def generate_final_response(state: State,
             for idx, c in enumerate(state['vector_results'])
         ])
 
+        stats_summary = f"""
+        Drivers Data Analysis:
+        {state['driver_summary']}
+
+        Sentiment Data Analysis
+        {state['sentiment_summary']}"""
+
+        if summaries == 1:
+            stats_summary = f"""
+            Data Summary
+            {state['driver_summary']}
+            """
+
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=state.get('max_tokens',
                                  2000),  # Updated to use max_tokens from state
             temperature=0,
             system=
-            """You are a helpful customer experience analysis expert that provides insights from aggregate ratings and sentiment data and customer reviews.
+            """You are a helpful customer experience analysis expert that provides insights from aggregate data summaries and raw customer reviews. Combine the data summaries and customer reviews to provide a comprehensive analysis of the customer experience. Be sure to include statistics and direct quotes from reviews to back up your analysis evevrywhere possible.   
 
             Provide a well-structured response that includes:
             A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
@@ -221,12 +275,8 @@ async def generate_final_response(state: State,
                 f"""
                 User Query: {state['query']}
 
-                Drivers Data Analysis:
-                {state['driver_summary']}
-
-                Sentiment Data Analysis
-                {state['sentiment_summary']}
-
+                {stats_summary}
+                
                 Relevant Reviews:
                 {context_text}
                 """
@@ -245,7 +295,9 @@ async def process_query(query: str,
                         vector_store: VectorStore,
                         top_k: int = 300,
                         max_tokens: int = 2000,
-                        model: str = "claude-3-5-sonnet-20241022", reranking: int = 1) -> Dict:
+                        model: str = "claude-3-5-sonnet-20241022",
+                        reranking: int = 1,
+                        summaries: int = 0) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -271,9 +323,13 @@ async def process_query(query: str,
 
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
         luminoso_task = asyncio.create_task(
-            get_luminoso_stats(state, llm_handler))
+            get_luminoso_stats(state, llm_handler, summaries=summaries))
         vector_task = asyncio.create_task(
-            get_vector_results(state, vector_store, llm_handler, top_k=top_k, reranking = reranking))
+            get_vector_results(state,
+                               vector_store,
+                               llm_handler,
+                               top_k=top_k,
+                               reranking=reranking))
 
         # Wait for both tasks to complete
         parallel_start = time.time()
@@ -309,7 +365,8 @@ async def process_query_lite(query: str,
                              max_tokens: int = 2000,
                              model: str = "claude-3-5-sonnet-20241022",
                              themes: int = 0,
-                             summaries: int = 1, reranking: int = 1) -> Dict:
+                             summaries: int = 0,
+                             reranking: int = 1) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -340,7 +397,11 @@ async def process_query_lite(query: str,
                                themes=themes,
                                summaries=summaries))
         vector_task = asyncio.create_task(
-            get_vector_results(state, vector_store, llm_handler, top_k=top_k, reranking = reranking))
+            get_vector_results(state,
+                               vector_store,
+                               llm_handler,
+                               top_k=top_k,
+                               reranking=reranking))
 
         # Wait for both tasks to complete
         parallel_start = time.time()
