@@ -524,7 +524,7 @@ if st.button("Run Workflow"):
         try:
             import asyncio
             response = asyncio.run(
-                process_query(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens))
+                process_query(query, llm_handler, vector_store, top_k=top_k, max_tokens=max_tokens, model=model))
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])

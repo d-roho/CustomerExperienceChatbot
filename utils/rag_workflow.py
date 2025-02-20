@@ -14,7 +14,8 @@ class State(TypedDict):
     sentiment_summary: str
     vector_results: Dict[str, Any]
     final_response: str
-    max_tokens: int # Added max_tokens to the State
+    max_tokens: int
+    model: str
 
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     """Generate filters based on user query using Claude."""
@@ -200,7 +201,7 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
     except Exception as e:
         raise RuntimeError(f"Final response generation failed: {str(e)}")
 
-async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000) -> Dict:
+async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000, model: str = "claude-3-5-sonnet-20241022") -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         # Initialize state
@@ -212,7 +213,8 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
             final_response="",
             driver_summary="",
             sentiment_summary="",
-            max_tokens=max_tokens #Added max_tokens to state
+            max_tokens=max_tokens,
+            model=model
         )
 
         # Step 1: Generate filters
