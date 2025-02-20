@@ -576,8 +576,9 @@ if st.button("Run Workflow"):
                     st.dataframe(response['luminoso_results']['sentiment'])
                     st.subheader(f"Stats Summary \n")
                     st.markdown(response['driver_summary'])
-            if reviews_summary == 1:
-                st.markdown(response['reviews_summary'])
+                if reviews_summary == 1:
+                    st.subheader("Reviews Summary")
+                    st.markdown(response['reviews_summary'])
             with st.expander(
                     f"{len(response['vector_results'])} Reviews Retrieved"):
                 st.subheader(f"Total Reviews : \n Query:{response['query']}")
