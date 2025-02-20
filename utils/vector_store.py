@@ -281,16 +281,24 @@ class VectorStore:
 
         try:
             # Prepare pairs for reranking
-            pairs = [[query, f"{result['header']}\n{result['text']}"]
-                     for result in results]
+            pairs = []
+            for result in results:
+                if isinstance(result, dict) and 'text' in result and 'header' in result:
+                    text = f"{result['header']}\n{result['text']}"
+                    pairs.append([query, text])
+            
+            if not pairs:
+                return results
+                
             scores = model.predict(pairs)
 
             # Update scores
             for i, result in enumerate(results):
-                result['score'] = float(scores[i])
+                if i < len(scores):
+                    result['score'] = float(scores[i])
 
             # Sort by new scores
-            results.sort(key=lambda x: x['score'], reverse=True)
+            results.sort(key=lambda x: x.get('score', 0), reverse=True)
             return results
         except Exception as e:
             print(f"Warning: Reranking failed: {str(e)}")
