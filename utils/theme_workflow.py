@@ -84,20 +84,8 @@ Structure for output:
     except Exception as e:
         raise RuntimeError(f"Themes-Sentiment generation failed: {str(e)}")
 
-async def refine_themes(state: State, llm_handler: LLMHandler, vector_store: VectorStore) -> State:
+async def refine_themes(state: State, llm_handler: LLMHandler) -> State:
     """Combine Themes and sentiments to generate more meaningful themes"""
-
-    try: #merging prompt
-        reviews_df = vector_store.fetch_all_reviews(state['index'])
-        reviews_list = []    
-
-        for idx, row in reviews_df.iterrows():
-            reviews_list.append(row['Text'])  # Changed extend to append
-
-        REVIEWS = '\n'.join(reviews_list)
-
-    except Exception as e:
-        raise RuntimeError(f"Failed to fetch reviews: {str(e)}")
     try:
         response = llm_handler.anthropic.messages.create(
             model='claude-3-5-sonnet-20241022',
@@ -176,11 +164,13 @@ async def process_themes(index: str, llm_handler: LLMHandler, vector_store: Vect
             'tagged_df': {}
         }
 
-        # Step 1: Generate filters
+        # Step 1: Generate preliminary themes
         state = await generate_preliminary_themes(state, llm_handler, vector_store, index)
 
-        # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
-        state = await refine_themes(state, llm_handler, vector_store)
+        # Step 2: Refine themes
+        state = await refine_themes(state, llm_handler)
+
+        # Step 3: Generate final response
         state = await generate_final_response(state, llm_handler)
 
         return state

@@ -18,4 +18,5 @@ dependencies = [
     "sentence-transformers>=3.4.1",
     "sqlalchemy>=2.0.38",
     "streamlit>=1.42.0",
+    "trafilatura>=2.0.0",
 ]
