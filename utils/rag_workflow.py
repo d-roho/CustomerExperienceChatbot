@@ -14,6 +14,7 @@ class State(TypedDict):
     sentiment_summary: str
     vector_results: Dict[str, Any]
     final_response: str
+    max_tokens: int # Added max_tokens to the State
 
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
     """Generate filters based on user query using Claude."""
@@ -163,17 +164,17 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
 
         response = llm_handler.anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
-            max_tokens=2000,
+            max_tokens=state.get('max_tokens', 2000), # Updated to use max_tokens from state
             temperature=0,
             system="""You are a helpful customer experience analysis expert that provides insights from aggregate ratings and sentiment data and customer reviews.
 
             Provide a well-structured response that includes:
             A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
-        
+
             Bullet points should be used wherever necessary
             Reference the source wherever using them to answer the question
             Use numbers and percentages when necessary
-    
+
             Summary of the answer in 2-3 lines emphasizing the most important points.
             Suggested actions based on findings and query if necessary
             Provide potential follow up query to answer if necessary
@@ -199,7 +200,7 @@ async def generate_final_response(state: State, llm_handler: LLMHandler) -> Stat
     except Exception as e:
         raise RuntimeError(f"Final response generation failed: {str(e)}")
 
-async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300) -> Dict:
+async def process_query(query: str, llm_handler: LLMHandler, vector_store: VectorStore, top_k: int = 300, max_tokens: int = 2000) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         # Initialize state
@@ -210,7 +211,8 @@ async def process_query(query: str, llm_handler: LLMHandler, vector_store: Vecto
             vector_results={},
             final_response="",
             driver_summary="",
-            sentiment_summary=""
+            sentiment_summary="",
+            max_tokens=max_tokens #Added max_tokens to state
         )
 
         # Step 1: Generate filters
