@@ -1,3 +1,6 @@
+Themes not showing
+Theme Generation fix
+
 Node # 3 Standardization:
 - Tune Answer format | Subsections for Data and Review Summary?
 Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA, Make more agentic (flexible tool use process)    
