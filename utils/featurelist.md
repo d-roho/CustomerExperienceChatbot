@@ -1,7 +1,7 @@
 Practicality - Customer Requirements!!!, Speed & Consistency!!!
 
 Parralellization 
-- Pinecone Retrieval | Logic and Bugs, Reranking
+- Pinecone Retrieval | Paralleliztion, Reranking
 - Luminoso - subsets
 - Agentic update code
 - Prompting

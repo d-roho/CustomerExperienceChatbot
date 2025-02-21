@@ -74,8 +74,8 @@ except Exception as e:
 st.sidebar.title("Parameters")
 # chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 # chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
-top_k = st.sidebar.slider("Number of Reviews", 1, 300, 200)
-max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 2000)
+top_k = st.sidebar.slider("Number of Reviews", 1, 300, 25)
+max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 200)
 use_reranking = st.sidebar.checkbox("Use Reranking", True)
 
 # Main interface
@@ -256,7 +256,7 @@ with col2:
     selected_cities = st.multiselect(
         "Cities",
         cities_list,
-        default=cities_list if select_all_cities else [],
+        default=cities_list if select_all_cities else ["New York", "Los Angeles"],
         key="cities_select")
 
     # States
@@ -269,7 +269,7 @@ with col2:
     selected_states = st.multiselect(
         "States",
         states_list,
-        default=states_list if select_all_states else [],
+        default=states_list if select_all_states else ['NY', 'CA'],
         key="states_select")
 
     # Locations
@@ -300,7 +300,7 @@ with col2:
     selected_location = st.multiselect(
         "Select Store Locations",
         locations_list,
-        default=locations_list if select_all_locations else [],
+        default=locations_list if select_all_locations else ["43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA"],
         key="location_select")
 
     # Themes
@@ -323,7 +323,7 @@ with col2:
     selected_themes = st.multiselect(
         "Select Themes",
         themes_list,
-        default=themes_list if select_all_themes else [],
+        default=themes_list if select_all_themes else ["Exceptional Customer Service & Support","Poor Service & Long Wait Times"],
         key="themes_select")
 
 with col1:
@@ -361,11 +361,12 @@ with col1:
 
 subsets = st.multiselect("Select Attributes to Subset Data on",
                ['year','cities', 'states', 'location', 'themes'],
+                         default = ['states', 'themes', 'location', 'cities'],
                key='subsets_select')
 selected_tool = st.selectbox(
     "Select Tool",
     ["Luminoso Stats API", "Basic RAG Search", "Metadata Filter RAG Search"],
-    index=0)
+    index=2)
 if selected_tool == "Luminoso Stats API":
 
     if st.button("Fetch Stats", key="fetch_stats"):
@@ -501,14 +502,14 @@ elif selected_tool == "Metadata Filter RAG Search":
                                                      index_name=selected_index)
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
-                # # Rerank if enabled
-                # rerank_time = time.time()  #Start timer
-                # rerank_execution_time = 0
-                # if use_reranking and results:
-                #     results = vector_store.rerank_results(
-                #         query_filter, results)
-                #     rerank_execution_time = time.time(
-                #     ) - rerank_time  #Stop timer
+                # Rerank if enabled
+                rerank_time = time.time()  #Start timer
+                rerank_execution_time = 0
+                if use_reranking and results:
+                    results = vector_store.rerank_results(
+                        query_filter, results)
+                    rerank_execution_time = time.time(
+                    ) - rerank_time  #Stop timer
 
                 # Generate response
                 if results:

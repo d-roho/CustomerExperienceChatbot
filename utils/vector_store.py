@@ -149,8 +149,21 @@ class VectorStore:
     ) -> List[Dict[str, Any]]:
         """Search for similar texts using METADATA FILTERS."""
 
-        try:
-            print(f"Subsets: {filters['subsets']}")
+        try: 
+            message = 'Removed lower level subsets: '
+            if 'states' in filters['subsets']: # geographic hierarchy (use highest level only)
+                if 'cities' in filters['subsets']: 
+                    filters['subsets'].remove('cities')
+                    message += 'cities, '
+                if 'location' in filters['subsets']:
+                    filters['subsets'].remove('location')
+                    message += 'location,'
+            if 'cities' in filters['subsets']: 
+                 if 'location' in filters['subsets']:
+                    filters['subsets'].remove('location')
+                    message += 'location,'
+                     
+            print(f"Filter: {filters} \n {message}")
             reviews_dict = {}
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]
@@ -212,7 +225,6 @@ class VectorStore:
                     unix_time = int(dt.timestamp())
                     return unix_time
 
-
                 if has_date:
                     filter_query['date_year'] = {'$eq': combo[-1]}
 
@@ -253,30 +265,26 @@ class VectorStore:
                         if not values:
                             continue
 
+                        if key.lower() == 'themes':
+                            if 'themes' in filters['subsets']:
+                                idx = filters['subsets'].index('themes')
+                                filter_query[combo[idx]] = {'$exists': True}
+
+                            else:
+                                filter_query['$or'] = [{
+                                    theme: {
+                                        '$exists': True
+                                    }
+                                } for theme in filters[key]]
                         if key in FIELD_MAPPING:
                             mongo_field = FIELD_MAPPING[key]
-
-                            if key.lower() == 'themes':
-                                if 'themes' in filters['subsets']:
-                                    idx = filters['subsets'].index('themes')
-                                    filter_query[combo[idx]] = {
-                                        '$exists': true
-                                    }
-
-                                else:
-                                    filter_query['$or'] = [{
-                                        theme: {
-                                            '$exists': true
-                                        }
-                                    } for theme in filters[key]]
+                            if key in filters['subsets']:
+                                idx = filters['subsets'].index(key)
+                                filter_query[mongo_field] = {
+                                    '$eq': combo[idx]
+                                }
                             else:
-                                if mongo_field in filters['subsets']:
-                                    idx = filters['subsets'].index(mongo_field)
-                                    filter_query[mongo_field] = {
-                                        '$in': [combo[idx]]
-                                    }
-                                else:
-                                    filter_query[mongo_field] = {'$eq': values}
+                                filter_query[mongo_field] = {'$in': values}
 
                 print(filter_query)
 
@@ -310,7 +318,7 @@ class VectorStore:
                     'subset_info': subset_info,
                     'processed_results': processed_results
                 }
-                print(f"Subset {combo_idx} complete")
+                print(f"Subset {combo_idx+1} complete")
 
             return reviews_dict
 
