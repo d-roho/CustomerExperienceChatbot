@@ -325,11 +325,13 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to filter search: {str(e)}")
 
-    def rerank_results(self, query: str,
-                       results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Rerank results using semantic similarity."""
+    async def rerank_results(self, query: str,
+                           results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Rerank results using semantic similarity with async batching."""
         try:
             from sentence_transformers import CrossEncoder
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
             model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
         except Exception as e:
             print(f"Warning: Reranking model not available: {str(e)}")
@@ -339,11 +341,28 @@ class VectorStore:
             # Prepare pairs for reranking
             pairs = []
             for result in results:
-                print(result)
                 text = f"{result['header']}\n{result['text']}"
                 pairs.append([query, text])
 
-            scores = model.predict(pairs)
+            # Define batch processing with concurrency limit
+            BATCH_SIZE = 20
+            MAX_CONCURRENT = 5
+            semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+            
+            async def process_batch(batch_pairs):
+                async with semaphore:
+                    loop = asyncio.get_event_loop()
+                    with ThreadPoolExecutor() as pool:
+                        return await loop.run_in_executor(pool, model.predict, batch_pairs)
+
+            # Process batches concurrently
+            tasks = []
+            for i in range(0, len(pairs), BATCH_SIZE):
+                batch = pairs[i:i + BATCH_SIZE]
+                tasks.append(process_batch(batch))
+
+            batch_scores = await asyncio.gather(*tasks)
+            scores = [score for batch in batch_scores for score in batch]
 
             # Update scores
             for i, result in enumerate(results):
