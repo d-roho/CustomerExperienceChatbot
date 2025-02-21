@@ -421,23 +421,23 @@ class LuminosoStats:
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
 
-async def run_tasks():
-    loop = asyncio.get_event_loop()
-    lumin_client = LuminosoStats().initialize_client()
-    filter_params = {"themes":["Positive", "Negative"], "rating_min":[3], "rating_max":[5]} # Example filter
-    drivers_task = asyncio.create_task(LuminosoStats().fetch_drivers(lumin_client, filter_params))
-    sentiment_task = asyncio.create_task(LuminosoStats().fetch_sentiment(lumin_client, filter_params))
-    results = await asyncio.gather(drivers_task, sentiment_task)
-    return results[0][0], results[0][1], results[1][0], results[1][1]
+# async def run_tasks():
+#     loop = asyncio.get_event_loop()
+#     lumin_client = LuminosoStats().initialize_client()
+#     filter_params = {"themes":["Positive", "Negative"], "rating_min":[3], "rating_max":[5]} # Example filter
+#     drivers_task = asyncio.create_task(LuminosoStats().fetch_drivers(lumin_client, filter_params))
+#     sentiment_task = asyncio.create_task(LuminosoStats().fetch_sentiment(lumin_client, filter_params))
+#     results = await asyncio.gather(drivers_task, sentiment_task)
+#     return results[0][0], results[0][1], results[1][0], results[1][1]
 
-async def main():
-    drivers_df, drivers_time, sentiment_df, sentiment_time = await run_tasks()
-    print("Drivers Data:")
-    print(drivers_df)
-    print(f"Drivers Fetch Time: {drivers_time:.2f} seconds")
-    print("\nSentiment Data:")
-    print(sentiment_df)
-    print(f"Sentiment Fetch Time: {sentiment_time:.2f} seconds")
+# async def main():
+#     drivers_df, drivers_time, sentiment_df, sentiment_time = await run_tasks()
+#     print("Drivers Data:")
+#     print(drivers_df)
+#     print(f"Drivers Fetch Time: {drivers_time:.2f} seconds")
+#     print("\nSentiment Data:")
+#     print(sentiment_df)
+#     print(f"Sentiment Fetch Time: {sentiment_time:.2f} seconds")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())

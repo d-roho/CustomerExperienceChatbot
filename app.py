@@ -385,10 +385,10 @@ if selected_tool == "Luminoso Stats API":
             try:
                 print(filter_params)
 
-                # Create and run tasks using asyncio.run
                 async def run_tasks():
-                    drivers_task = lumin_class.fetch_drivers(lumin_client, filter_params)
-                    sentiment_task = lumin_class.fetch_sentiment(lumin_client, filter_params)
+                    lumin_client = LuminosoStats().initialize_client()
+                    drivers_task = asyncio.create_task(LuminosoStats().fetch_drivers(lumin_client, filter_params))
+                    sentiment_task = asyncio.create_task(LuminosoStats().fetch_sentiment(lumin_client, filter_params))
                     results = await asyncio.gather(drivers_task, sentiment_task)
                     return results[0][0], results[0][1], results[1][0], results[1][1]
 
