@@ -8,6 +8,7 @@ import time
 import asyncio
 import aiohttp
 
+
 class LuminosoStats:
 
     def __init__(self):
@@ -142,13 +143,18 @@ class LuminosoStats:
                     results = []
                     for theme in drivers_exist:
                         concept = {"type": "concept_list", 'name': theme}
-                        url = f"{self.luminoso_url}/concepts/score_drivers/"
+                        url = f"concepts/score_drivers/"
                         params = {
-                            "score_field": "Overall Rating",
-                            "concept_selector": json.dumps(concept),
-                            "filter": json.dumps(filters) if filters_exist == 1 else None
+                            "score_field":
+                            "Overall Rating",
+                            "concept_selector":
+                            json.dumps(concept),
+                            "filter":
+                            json.dumps(filters) if filters_exist == 1 else None
                         }
-                        async with session.get(url, headers=headers, params=params) as response:
+                        async with session.get(url,
+                                               headers=headers,
+                                               params=params) as response:
                             result = await response.json()
 
                         df = pd.DataFrame(result)
@@ -157,11 +163,13 @@ class LuminosoStats:
                             'excluded_term_ids', 'vectors', 'exact_match_count'
                         ])
                         try:
-                            df.drop(columns=['shared_concept_id'], inplace=True)
+                            df.drop(columns=['shared_concept_id'],
+                                    inplace=True)
                         except:
                             continue
                         # Select numeric columns (excluding 'name')
-                        numeric_cols = df.select_dtypes(include=['number']).columns
+                        numeric_cols = df.select_dtypes(
+                            include=['number']).columns
 
                         # Normalize each numeric column
                         for col in numeric_cols:
@@ -173,7 +181,8 @@ class LuminosoStats:
                             elif col == 'impact':
                                 df[col] = df[col]
                             else:
-                                df[col] = (df[col] - min_val) / (max_val - min_val)
+                                df[col] = (df[col] - min_val) / (max_val -
+                                                                 min_val)
 
                         column_mapping = {
                             'name': 'Theme Name',
@@ -189,31 +198,38 @@ class LuminosoStats:
                         df = df.rename(columns=column_mapping)
                         if counter == 0:
                             api_time = time.time() - api_start_time
-                            print(f"First API call and processing time: {api_time:.2f}s")
+                            print(
+                                f"First API call and processing time: {api_time:.2f}s"
+                            )
                         print(df)
                         if counter == 0:
                             df_deep_copy = df.copy(deep=True)
                         else:
                             df_to_merge = df.copy(deep=True)
-                            df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
+                            df_deep_copy = pd.concat(
+                                [df_deep_copy, df_to_merge])
                         counter += 1
                         print(len(df_deep_copy))
                         results.append(df)
 
                 else:
-                    url = f"{self.luminoso_url}/concepts/score_drivers/"
+                    url = f"concepts/score_drivers/"
                     params = {
-                        "score_field": "Overall Rating",
-                        "limit": 50,
-                        "filter": json.dumps(filters) if filters_exist == 1 else None
+                        "score_field":
+                        "Overall Rating",
+                        "limit":
+                        50,
+                        "filter":
+                        json.dumps(filters) if filters_exist == 1 else None
                     }
-                    async with session.get(url, headers=headers, params=params) as response:
+                    async with session.get(url, headers=headers,
+                                           params=params) as response:
                         result = await response.json()
 
                     df = pd.DataFrame(result)
                     df = df.drop(columns=[
-                        'texts', 'exact_term_ids', 'excluded_term_ids', 'vectors',
-                        'exact_match_count'
+                        'texts', 'exact_term_ids', 'excluded_term_ids',
+                        'vectors', 'exact_match_count'
                     ])
                     # Select numeric columns (excluding 'name')
                     numeric_cols = df.select_dtypes(include=['number']).columns
@@ -356,12 +372,16 @@ class LuminosoStats:
                     results = []
                     for theme in sentiments_exist:
                         concept = {"type": "concept_list", 'name': theme}
-                        url = f"{self.luminoso_url}/concepts/sentiment/"
+                        url = f"concepts/sentiment/"
                         params = {
-                            "concept_selector": json.dumps(concept),
-                            "filter": json.dumps(filters) if filters_exist == 1 else None
+                            "concept_selector":
+                            json.dumps(concept),
+                            "filter":
+                            json.dumps(filters) if filters_exist == 1 else None
                         }
-                        async with session.get(url, headers=headers, params=params) as response:
+                        async with session.get(url,
+                                               headers=headers,
+                                               params=params) as response:
                             result = await response.json()
 
                         rows = []
@@ -389,21 +409,29 @@ class LuminosoStats:
                             df_deep_copy = df.copy(deep=True)
                         else:
                             df_to_merge = df.copy(deep=True)
-                            df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
+                            df_deep_copy = pd.concat(
+                                [df_deep_copy, df_to_merge])
                         counter += 1
                         print(len(df_deep_copy))
                         df_deep_copy = df_deep_copy.sort_values(
-                            by='Proportion of Subset With Theme', ascending=False)
+                            by='Proportion of Subset With Theme',
+                            ascending=False)
                         df_deep_copy = df_deep_copy.head(50)
                         results.append(df)
 
                 else:
-                    url = f"{self.luminoso_url}/concepts/sentiment/"
+                    url = f"concepts/sentiment/"
                     params = {
-                        "concept_selector": json.dumps({"type": "top", 'limit': 50}),
-                        "filter": json.dumps(filters) if filters_exist == 1 else None
+                        "concept_selector":
+                        json.dumps({
+                            "type": "top",
+                            'limit': 50
+                        }),
+                        "filter":
+                        json.dumps(filters) if filters_exist == 1 else None
                     }
-                    async with session.get(url, headers=headers, params=params) as response:
+                    async with session.get(url, headers=headers,
+                                           params=params) as response:
                         result = await response.json()
 
                     rows = []
@@ -433,6 +461,7 @@ class LuminosoStats:
             return df_deep_copy, total_time
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
+
 
 # async def run_tasks():
 #     loop = asyncio.get_event_loop()
