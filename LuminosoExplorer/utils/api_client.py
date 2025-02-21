@@ -19,7 +19,7 @@ def initialize_client() -> LuminosoClient:
     try:
         client = LuminosoClient.connect(
             url='/projects/pr6j5grz/',
-            token='o-EBS8WHPQyQmeFLhkqqEMWGsIrUS4z0'
+            token=''
         )
         return client
     except Exception as e:
