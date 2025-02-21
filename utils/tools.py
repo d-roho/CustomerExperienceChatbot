@@ -255,8 +255,8 @@ class LuminosoStats:
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Drivers: {str(e)}")
 
-    def fetch_sentiment(self, client, filter):
-        """Fetch sentiment for given filters and concepts."""
+    async def fetch_sentiment(self, client, filter):
+        """Fetch sentiment for given filters and concepts asynchronously."""
         try:
             start_time = time.time()
 
