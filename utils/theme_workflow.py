@@ -141,10 +141,16 @@ async def generate_final_response(state: State,
 
         themes_text = '\n'.join(str(theme) for theme in themes_list)
         df = pd.DataFrame.from_dict(state['sample_df'])
+        
+        # Ensure Text column exists
+        if 'Text' not in df.columns:
+            df['Text'] = df.get('text', '')  # Try alternate column name
+            
+        # Initialize Theme_Subthemes column
         df['Theme_Subthemes'] = ''
 
         for idx, row in df.iterrows():
-            review = row['Text']
+            review = row.get('Text', '')  # Safely get Text value
 
             keywords = llm_handler.anthropic.messages.create(
                 model="claude-3-5-sonnet-20241022",
