@@ -1,31 +1,7 @@
-Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA   
-
-SLIDES & TESTING
-
-- make a lightweight version
-Improve Quality and Consistency | Make more agentic (flexible tool use process) | Subseting | Find time bottlenecks and resolve  
-
-
-Tool # 1 Luminoso API
-  - Filters
-    - Themes (1-by-1, Combine terms, Helios themes)
-  - LLM Summarization
-    - Validate & Tune (T3)
-    - Looks really useful, try to intgrate more info into final answer (T3)
-
-Tool # 2 Reviews Retriever
-  - Reviews Summary Strategy
-  - add top K option
-  - Subseting
-
-
 Node # 3 Standardization:
-  - Tune Answer format | Subsections for Data and Review Summary?
+- Tune Answer format | Subsections for Data and Review Summary?
+Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA, Make more agentic (flexible tool use process)    
 
-Prompts and Testing
-
-
-Auto Data Analysis
 
 DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Opportunities  
 
@@ -55,3 +31,12 @@ Agentic RAG:
 Jose:
 - Speed
 - Deployment
+
+Tool # 1 Luminoso API
+  - Filters
+    - Themes (1-by-1, Combine terms, Helios themes)
+  - Subsetting
+
+Tool # 2 Reviews Retriever
+  - Subseting
+
