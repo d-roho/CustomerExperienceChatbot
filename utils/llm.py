@@ -66,7 +66,7 @@ class LLMHandler:
                     "content":
                     f"Context:\n{context_text}\n\nQuestion: {query}"
                 }])
-            return response.content[0].text, context_texts
+            return response.content[0].text, context_text
         except Exception as e:
             raise RuntimeError(f"Failed to generate response: {str(e)}")
 
