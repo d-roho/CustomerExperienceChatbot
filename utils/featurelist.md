@@ -1,3 +1,5 @@
+Practicality - Customer Requirements!!!, Speed & Consistency!!!
+
 Parralellization 
 - Luminoso
 - Pinecone Retrieval

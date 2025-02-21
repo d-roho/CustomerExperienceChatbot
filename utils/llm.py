@@ -3,6 +3,7 @@ import sys
 from anthropic import Anthropic
 from openai import OpenAI
 from typing import List, Dict, Any
+import json
 
 
 class LLMHandler:
@@ -24,11 +25,34 @@ class LLMHandler:
     def generate_response(self, query: str, context: List[Dict[str, Any]],
                           model: str, max_tokens: int = 2000) -> str:
         """Generate a response using Claude."""
-        context_text = "\n".join([
-            f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
-            for idx, c in enumerate(context)
-        ])
 
+        if isinstance(context, dict):
+            context_list = []
+            cumulative_reviews = []
+            for key, value in context.items():
+                title = f"Subset {key} Info: \n {json.dumps(value['subset_info'], indent=2)}"
+
+                context_text = "\n".join(
+                    [
+                        f"Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+                        if c['header'] not in cumulative_reviews
+                        else f"Review {idx} \n {c['text']}"
+                        for idx, c in enumerate(value['processed_results'])
+                    ]
+                )
+
+                
+                context_list.append(f"{title}\n\n {context_text} \n\n END OF SUBSET {key}")     
+            context_text = "\n\n".join(context_list)
+
+            cumulative_reviews.extend([c['header'] for c in context['processed_results']]) #remove duplicate reviews       
+                         
+        else:
+            context_text = "\n".join([
+                f" Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+                for idx, c in enumerate(context)
+            ])
+    
         try:
             response = self.anthropic.messages.create(
                 model=model,
@@ -42,7 +66,7 @@ class LLMHandler:
                     "content":
                     f"Context:\n{context_text}\n\nQuestion: {query}"
                 }])
-            return response.content[0].text, context_text
+            return response.content[0].text, context_texts
         except Exception as e:
             raise RuntimeError(f"Failed to generate response: {str(e)}")
 

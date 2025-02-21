@@ -6,6 +6,10 @@ from anthropic import Anthropic
 # import torch
 from utils.db import MotherDuckStore  # New import
 import datetime
+import asyncio
+import itertools
+
+
 
 
 
@@ -149,124 +153,138 @@ class VectorStore:
         """Search for similar texts using METADATA FILTERS."""
 
         try:
+            reviews_dict = {}
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]
             print(f"Searching Pinecone with top_k={top_k}")
 
-            FIELD_MAPPING = {
-                'cities': 'city',
-                'states': 'state',
-                'month_start': 'date_month',
-                'year_start': 'date_year',
-                'month_end': 'date_month',
-                'year_end': 'date_year',
-                # 'themes': 'themes',
-                'rating_min': 'rating',
-                'rating_max': 'rating',
-                'location': 'location'
-                # subset of fields to search for
-            }
-            # SCALAR_FIELDS = {'month_start', 'year_start', 'month_end', 'year_end', 'rating_min', 'rating_min'}
+            year_range = filters.get('year_end', 2025) - filters.get('year_start', 2019)
+            years = [filters.get('year_start', 2019) + i for i in range(year_range)]
+            filters['years'] = years
 
-            filter_query = {}
+            subset_options_merged = []
+            date_types = ['year_start', 'year_end', 'month_start', 'month_end']
+            subset_options_1 = [filters[subset] for subset in filters['subsets'] if subset not in date_types]
+            subset_options_merged.extend(subset_options_1)
 
-            # Handle special rating range case
-            rating_conditions = {}
-            if filters.get('rating_min'):
-                rating_conditions['$gte'] = filters['rating_min'][0]
-            if filters.get('rating_max'):
-                rating_conditions['$lte'] = filters['rating_max'][0]
-            if rating_conditions:
-                filter_query['rating'] = rating_conditions
+            has_date = set(date_types) & set(filters['subsets'])
+            if has_date:
+                subset_options_merged.append(years)
 
-            # Handle special date range case
-            def get_unix_time(month, year):
-                # Create a datetime object for the first day of the given month and year
-                dt = datetime.datetime(year, month, 1, 0, 0, 0)
+            if subset_options_merged:
+                subset_combinations = list(itertools.product(*subset_options_merged))
+            else:
+                subset_combinations = []
 
-                # Convert the datetime object to Unix time (seconds since January 1, 1970)
-                unix_time = int(dt.timestamp())
-                return unix_time
-          
-            
-            date_conditions = {}
+            for combo_idx, combo in enumerate(subset_combinations):
 
-            
-            if filters.get('year_start'):
-                if filters.get('month_start'):
-                    start_unix = get_unix_time(filters['month_start'][0], filters['year_start'][0])
+                FIELD_MAPPING = {
+                    'cities': 'city',
+                    'states': 'state',
+                    'month_start': 'date_month',
+                    'year_start': 'date_year',
+                    'month_end': 'date_month',
+                    'year_end': 'date_year',
+                    'rating_min': 'rating',
+                    'rating_max': 'rating',
+                    'location': 'location'
+                }
+
+                filter_query = {}
+
+                rating_conditions = {}
+                if filters.get('rating_min'):
+                    rating_conditions['$gte'] = filters['rating_min'][0]
+                if filters.get('rating_max'):
+                    rating_conditions['$lte'] = filters['rating_max'][0]
+                if rating_conditions:
+                    filter_query['rating'] = rating_conditions
+
+                def get_unix_time(month, year):
+                    dt = datetime.datetime(year, month, 1, 0, 0, 0)
+                    unix_time = int(dt.timestamp())
+                    return unix_time
+
+                date_conditions = {}
+
+                if has_date:
+                    filter_query['date_year'] = {'$eq': combo[-1]}
+
                 else:
-                    start_unix = get_unix_time(1, filters['year_start'][0])
-                date_conditions['$gte'] = start_unix
 
-            if filters.get('year_end'):
-                if filters.get('month_end'):
-                    end_unix = get_unix_time(filters['month_end'][0], filters['year_end'][0])
-                else:
-                    end_unix = get_unix_time(12, filters['year_end'][0])
-                date_conditions['$lte'] = end_unix
+                    if filters.get('year_start'):
+                        if filters.get('month_start'):
+                            start_unix = get_unix_time(filters['month_start'][0], filters['year_start'][0])
+                        else:
+                            start_unix = get_unix_time(1, filters['year_start'][0])
+                        date_conditions['$gte'] = start_unix
 
-            if date_conditions:
-                filter_query['date_unix'] = date_conditions
+                    if filters.get('year_end'):
+                        if filters.get('month_end'):
+                            end_unix = get_unix_time(filters['month_end'][0], filters['year_end'][0])
+                        else:
+                            end_unix = get_unix_time(12, filters['year_end'][0])
+                        date_conditions['$lte'] = end_unix
 
-            # Build filter query
-            for key in filters:
-                if key in ['rating_min', 'rating_max', 'subsets', 'month_start', 'year_start',
-                    'month_end','year_end']:
-                    continue  # Already handled or will handle later
+                    if date_conditions:
+                        filter_query['date_unix'] = date_conditions
 
-                values = filters[key]
-                if not values:
-                    continue  # Skip empty lists
+                    for key in filters:
+                        if key in ['rating_min', 'rating_max', 'subsets', 'month_start', 'year_start',
+                                   'month_end', 'year_end']:
+                            continue
 
-                if key in FIELD_MAPPING:
-                    mongo_field = FIELD_MAPPING[key]
+                        values = filters[key]
+                        if not values:
+                            continue
 
-                    if key.lower() == 'themes':
-                        for theme in filters[key]:  
-                            filter_query[theme] = '{"$exists": true}'
-                    else:
-                        # Handle array values with $in
-                        filter_query[mongo_field] = {'$in': values}
+                        if key in FIELD_MAPPING:
+                            mongo_field = FIELD_MAPPING[key]
 
-            # # Build projection
-            # projection = {}
-            # if 'subsets' in filters:
-            #     for field in filters['subsets']:
-            #         if field in FIELD_MAPPING:
-            #             projection[FIELD_MAPPING[field]] = 1
-            #     if filters['subsets']:  # Only exclude _id if we have subsets
-            #         projection['_id'] = 0
+                            if key.lower() == 'themes':
+                                if 'themes' in filters['subsets']:
+                                    idx = filters['subsets'].index('themes')
+                                    filter_query[combo[idx]] = {'$exists': true}
 
-            print(filter_query)
-            
-            results = self.index.query(vector=query_embedding,
-                                       top_k=top_k,
-                                       filter=filter_query,
-                                       include_metadata=True)
+                                else:
+                                    filter_query['$or'] = [
+                                        {theme: {'$exists': true}} for theme in filters[key]
+                                    ]
+                            else:
+                                if mongo_field in filters['subsets']:
+                                    idx = filters['subsets'].index(mongo_field)
+                                    filter_query[mongo_field] = {'$in': combo[idx]}
+                                else:
+                                    filter_query[mongo_field] = {'$eq': values}
 
-            print(f"Successfully retrieved {len(results['matches'])} results")
-            # Retrieve full texts and metadata from MotherDuck
-            processed_results = []
-            for match in results.matches:
-                stored_data = self.db.get_chunk(match.id, index_name)
-                if stored_data:
-                    processed_results.append({
-                        'text':
-                        stored_data['text'],
-                        'metadata':
-                        stored_data['metadata'],
-                        'header':
-                        match.metadata['header'],
-                        'score':
-                        match.score
-                    })
+                print(filter_query)
 
-            return processed_results
+                results = self.index.query(vector=query_embedding,
+                                           top_k=top_k,
+                                           filter=filter_query,
+                                           include_metadata=True)
+
+                print(f"Successfully retrieved {len(results['matches'])} results")
+
+                processed_results = []
+                for match in results.matches:
+                    stored_data = self.db.get_chunk(match.id, index_name)
+                    if stored_data:
+                        processed_results.append({
+                            'text': stored_data['text'],
+                            'metadata': stored_data['metadata'],
+                            'header': match.metadata['header'],
+                            'score': match.score
+                        })
+                subset_info = {}
+                for idx, sub in enumerate(filters['subsets']):
+                    subset_info[sub] = combo[idx]
+                reviews_dict[combo_idx] = {'subset_info': subset_info, 'processed_results': processed_results}
+
+            return reviews_dict
 
         except Exception as e:
             raise RuntimeError(f"Failed to filter search: {str(e)}")
-
     def rerank_results(self, query: str,
                        results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity."""

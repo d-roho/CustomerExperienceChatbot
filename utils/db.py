@@ -83,7 +83,6 @@ class MotherDuckStore:
                 FROM "{index_name}"
                 WHERE uuid = '{chunk_id}'
             """
-            print(run)
             df = self.conn.execute(run).df()
             text = "none"
             metadata = "none"

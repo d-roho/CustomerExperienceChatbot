@@ -359,6 +359,9 @@ with col1:
                                  value=5,
                                  key="max_rating")
 
+subsets = st.multiselect("Select Attributes to Subset Data on",
+               ['Year','Cities', 'States', 'Locations', 'Themes'],
+               key='subsets_select')
 selected_tool = st.selectbox(
     "Select Tool",
     ["Luminoso Stats API", "Basic RAG Search", "Metadata Filter RAG Search"],
@@ -373,8 +376,8 @@ if selected_tool == "Luminoso Stats API":
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],
-            "year_end":
-            [end_year] if selected_cities and selected_themes else []
+            "year_end": [end_year],
+            'subsets': []
         }
 
         lumin_class = LuminosoStats()
@@ -387,16 +390,23 @@ if selected_tool == "Luminoso Stats API":
 
                 async def run_tasks():
                     lumin_client = LuminosoStats().initialize_client()
-                    drivers_task = asyncio.create_task(LuminosoStats().fetch_drivers(lumin_client, filter_params))
-                    sentiment_task = asyncio.create_task(LuminosoStats().fetch_sentiment(lumin_client, filter_params))
-                    results = await asyncio.gather(drivers_task, sentiment_task)
-                    return results[0][0], results[0][1], results[1][0], results[1][1]
+                    drivers_task = asyncio.create_task(
+                        LuminosoStats().fetch_drivers(lumin_client,
+                                                      filter_params))
+                    sentiment_task = asyncio.create_task(
+                        LuminosoStats().fetch_sentiment(
+                            lumin_client, filter_params))
+                    results = await asyncio.gather(drivers_task,
+                                                   sentiment_task)
+                    return results[0][0], results[0][1], results[1][
+                        0], results[1][1]
 
-                drivers, driver_time, sentiment, sentiment_time = asyncio.run(run_tasks())
+                drivers, driver_time, sentiment, sentiment_time = asyncio.run(
+                    run_tasks())
 
                 # Calculate execution times
                 execution_time = time.time() - start_time
-                
+
                 # Display results
 
                 execution_time = time.time() - start_time  #Stop timer
@@ -405,21 +415,20 @@ if selected_tool == "Luminoso Stats API":
                 st.subheader("Filter")
                 st.json(filter_params)
 
-                st.subheader(
-                    f"Drivers | Execution Time: {driver_time:.2f}s"
-                    ")")
+                st.subheader(f"Drivers | Execution Time: {driver_time:.2f}s"
+                             ")")
 
                 for key in drivers.keys():
                     st.subheader(f"Theme: {key}")
                     st.dataframe(drivers[key])
-    
+
                 st.subheader(
                     f"Sentiment | Execution Time: {sentiment_time:.2f}s"
                     ")")
-                for key in  sentiment.keys():
+                for key in sentiment.keys():
                     st.subheader(f"Theme: {key}")
                     st.dataframe(sentiment[key])
-    
+
             except Exception as e:
                 st.error(f"Luminoso Stats Retrieval failed: {str(e)}")
 
@@ -476,8 +485,8 @@ elif selected_tool == "Metadata Filter RAG Search":
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],
-            "year_end":
-            [end_year] if selected_cities and selected_themes else []
+            "year_end": [end_year],
+            'subsets': subsets
         }
 
         with st.spinner("Searching..."):
@@ -490,14 +499,14 @@ elif selected_tool == "Metadata Filter RAG Search":
                                                      index_name=selected_index)
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
-                # Rerank if enabled
-                rerank_time = time.time()  #Start timer
-                rerank_execution_time = 0
-                if use_reranking and results:
-                    results = vector_store.rerank_results(
-                        query_filter, results)
-                    rerank_execution_time = time.time(
-                    ) - rerank_time  #Stop timer
+                # # Rerank if enabled
+                # rerank_time = time.time()  #Start timer
+                # rerank_execution_time = 0
+                # if use_reranking and results:
+                #     results = vector_store.rerank_results(
+                #         query_filter, results)
+                #     rerank_execution_time = time.time(
+                #     ) - rerank_time  #Stop timer
 
                 # Generate response
                 if results:
@@ -512,7 +521,7 @@ elif selected_tool == "Metadata Filter RAG Search":
                     st.code(response, language="text")
 
                     st.subheader(
-                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s"
+                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s"
                     )
                     st.code(context, language="text")
                 else:
@@ -525,7 +534,8 @@ elif selected_tool == "Metadata Filter RAG Search":
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
 lite = st.checkbox("Run Lite version (No Themes)", True)
-single_summary = st.checkbox("Generate single summary for Luminoso Stats", True)
+single_summary = st.checkbox("Generate single summary for Luminoso Stats",
+                             True)
 reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
 
 if st.button("Run Workflow"):
@@ -542,7 +552,9 @@ if st.button("Run Workflow"):
                                        top_k=top_k,
                                        max_tokens=max_tokens,
                                        model=model,
-                                       reranking=use_reranking, summaries = single_summary, reviews_summary = reviews_summary))
+                                       reranking=use_reranking,
+                                       summaries=single_summary,
+                                       reviews_summary=reviews_summary))
                 lite_execution = 1
             else:
                 response = asyncio.run(
@@ -552,12 +564,16 @@ if st.button("Run Workflow"):
                                   top_k=top_k,
                                   max_tokens=max_tokens,
                                   model=model,
-                                  reranking=use_reranking, summaries = single_summary, reviews_summary = reviews_summary))
+                                  reranking=use_reranking,
+                                  summaries=single_summary,
+                                  reviews_summary=reviews_summary))
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
-                st.subheader(f"Execution Times (Lite: {lite_execution == 1} | Single Summary: {single_summary})")
+                st.subheader(
+                    f"Execution Times (Lite: {lite_execution == 1} | Single Summary: {single_summary})"
+                )
                 for step, duration in response['execution_times'].items():
                     st.metric(f"{step.replace('_', ' ').title()}",
                               f"{duration:.2f}s")
