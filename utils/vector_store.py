@@ -158,8 +158,10 @@ class VectorStore:
             query_embedding = client.get_embeddings([query])[0]
             print(f"Searching Pinecone with top_k={top_k}")
 
-            year_range = filters.get('year_end', 2025) - filters.get('year_start', 2019)
-            years = [filters.get('year_start', 2019) + i for i in range(year_range)]
+            year_start = filters.get('year_start', [2019])[0]
+            year_end = filters.get('year_end', [2025])[0]
+            year_range = year_end - year_start + 1
+            years = [year_start + i for i in range(year_range)]
             filters['years'] = years
 
             subset_options_merged = []
