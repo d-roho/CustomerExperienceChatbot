@@ -385,12 +385,13 @@ if selected_tool == "Luminoso Stats API":
             try:
                 print(filter_params)
 
-                # Create tasks for parallel execution
-                drivers_task = asyncio.create_task(lumin_class.fetch_drivers(lumin_client, filter_params))
-                sentiment_task = asyncio.create_task(lumin_class.fetch_sentiment(lumin_client, filter_params))
-                
-                # Wait for both tasks to complete
-                drivers, sentiment = asyncio.run(asyncio.gather(drivers_task, sentiment_task))
+                # Create and run tasks using asyncio.run
+                async def run_tasks():
+                    drivers_task = lumin_class.fetch_drivers(lumin_client, filter_params)
+                    sentiment_task = lumin_class.fetch_sentiment(lumin_client, filter_params)
+                    return await asyncio.gather(drivers_task, sentiment_task)
+
+                drivers, sentiment = asyncio.run(run_tasks())
 
                 # Calculate execution times
                 execution_time = time.time() - start_time
