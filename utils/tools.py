@@ -365,7 +365,7 @@ class LuminosoStats:
                 for idx, theme in enumerate(sentiments_exist):
 
                     rows = []
-                    for concept in results[idx]:
+                    for concept in results[idx]['match_counts']:
                         row = {
                             'Theme Name':
                             concept['name'],
@@ -379,9 +379,9 @@ class LuminosoStats:
                             concept['sentiment_share']['negative']
                         }
                         rows.append(row)
-                        filter_count = results[idx]['filter_count']
+                    filter_count = results[idx]['filter_count']
 
-                # Create DataFrame
+                    # Create DataFrame
                     df = pd.DataFrame(rows)
                     df['Proportion of Subset With Theme'] = df[
                         'Proportion of Subset With Theme'] / filter_count
