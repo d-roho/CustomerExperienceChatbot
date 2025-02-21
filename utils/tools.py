@@ -154,7 +154,7 @@ class LuminosoStats:
                 # Execute all tasks concurrently
                 results = await asyncio.gather(*tasks)
 
-                for idx in range(drivers_exist):
+                for idx, theme in enumerate(drivers_exist):
                     df = results[idx]
                     df = df.drop(columns=[
                         'color', 'texts', 'exact_term_ids',
