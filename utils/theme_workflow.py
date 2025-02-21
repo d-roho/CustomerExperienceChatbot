@@ -141,6 +141,7 @@ async def generate_final_response(state: State,
 
         themes_text = '\n'.join(str(theme) for theme in themes_list)
         df = pd.DataFrame.from_dict(state['sample_df'])
+        print(df)
         
         # Ensure Text column exists
         if 'Text' not in df.columns:
@@ -183,7 +184,8 @@ async def generate_final_response(state: State,
                 }])
             print(keywords)
             df.loc[idx, 'Theme_Subthemes'] = str(keywords.content[0].text)
-
+        
+        print(df)
         state["tagged_df"] = df.to_dict()
         return state
     except Exception as e:

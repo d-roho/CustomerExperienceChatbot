@@ -81,6 +81,7 @@ use_reranking = st.sidebar.checkbox("Use Reranking", True)
 # Main interface
 st.title("Review Analysis Pipeline")
 
+st.header("Vector Store and Theme Generation")
 # Input selection method
 input_method = st.radio("Select Input Method",
                         ["Existing Vector Store", "File Upload"],
@@ -187,7 +188,7 @@ elif input_method == "Existing Vector Store":
                 try:
                     # save results
                     output_file = f'attached_assets/saved_output/reviews_tagged_{timestamp}.csv'
-                    df = pd.DataFrame.from_dict(response['sample_df'])
+                    df = pd.DataFrame.from_dict(response['tagged_df'])
                     df.to_csv(output_file, index=False)
 
                     with open(
@@ -210,7 +211,7 @@ elif input_method == "Existing Vector Store":
                         f"Theme Generation Results (Execution time: {execution_time:.2f}s)"
                     )
                     with st.expander("Explore Workflow"):
-                        st.subheader(f"## Preliminary Themes  w/ Sentiment")
+                        st.subheader(f"reliminary Themes  w/ Sentiment")
                         st.json(response['preliminary_themes'], expanded=True)
                         st.subheader(f"Merged & Refine Themes \n")
                         st.json(response['refined_themes'], expanded=True)

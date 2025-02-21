@@ -1,12 +1,7 @@
-Themes not showing
-Theme Generation fix
+Parralellization |  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
+Slides
 
-Node # 3 Standardization:
-- Tune Answer format | Subsections for Data and Review Summary?
-Demos: Agentic Flow Tuning (Concision and Combination) | Subseting, Chart ADA, Make more agentic (flexible tool use process)    
-
-
-DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Opportunities  
+DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Improvements  
 
 
 _________________
@@ -34,12 +29,3 @@ Agentic RAG:
 Jose:
 - Speed
 - Deployment
-
-Tool # 1 Luminoso API
-  - Filters
-    - Themes (1-by-1, Combine terms, Helios themes)
-  - Subsetting
-
-Tool # 2 Reviews Retriever
-  - Subseting
-
