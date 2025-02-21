@@ -211,12 +211,12 @@ class VectorStore:
                     unix_time = int(dt.timestamp())
                     return unix_time
 
-                date_conditions = {}
 
                 if has_date:
                     filter_query['date_year'] = {'$eq': combo[-1]}
 
                 else:
+                    date_conditions = {}
 
                     if filters.get('year_start'):
                         if filters.get('month_start'):

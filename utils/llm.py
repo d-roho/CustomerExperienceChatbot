@@ -29,7 +29,8 @@ class LLMHandler:
         if isinstance(context, dict):
             context_list = []
             cumulative_reviews = []
-            for key, value in context.items():
+            for key in context.keys():
+                value = context[key]
                 title = f"Subset {key} Info: \n {json.dumps(value['subset_info'], indent=2)}"
 
                 context_text = "\n".join(
@@ -42,10 +43,11 @@ class LLMHandler:
                 )
 
                 
-                context_list.append(f"{title}\n\n {context_text} \n\n END OF SUBSET {key}")     
+                context_list.append(f"{title}\n\n {context_text} \n\n END OF SUBSET {key} \n\n")    
+                cumulative_reviews.extend([c['header'] for idx, c in enumerate(value['processed_results'])]) #remove duplicate reviews       
             context_text = "\n\n".join(context_list)
 
-            cumulative_reviews.extend([c['header'] for c in context['processed_results']]) #remove duplicate reviews       
+            
                          
         else:
             context_text = "\n".join([
