@@ -451,7 +451,7 @@ elif selected_tool == "Basic RAG Search":
                 rerank_time = time.time()  #Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    results = asyncio.run(vector_store.rerank_results(query_basic, results))
+                    results = vector_store.rerank_results(query_basic, results)
                     rerank_execution_time = time.time(
                     ) - rerank_time  #Stop timer
 
@@ -503,14 +503,26 @@ elif selected_tool == "Metadata Filter RAG Search":
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
                 # Rerank if enabled
-                rerank_time = time.time()  #Start timer
+                rerank_time = time.time()  # Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    for key in results.keys():
-                        subset_data = results[key]
-                        subset_data['processed_results'] = vector_store.rerank_results(
-                            query_filter, subset_data['processed_results'])
-                    rerank_execution_time = time.time() - rerank_time  #Stop timer
+                    try:
+                        import nest_asyncio
+                        nest_asyncio.apply()
+
+                        async def rerank_data(subset):
+                            return await vector_store.rerank_results(query_filter, subset['processed_results'])
+
+                        tasks = [rerank_data(subset_data) for subset_data in results.values()]
+                        processed_results = asyncio.run(asyncio.gather(*tasks))
+
+                        for (key, subset_data), processed in zip(results.items(), processed_results):
+                            subset_data['processed_results'] = processed
+
+                    except Exception as e:
+                        st.error(f"Reranking failed: {str(e)}")
+
+                    rerank_execution_time = time.time() - rerank_time  # Stop timer
 
                 # Generate response
                 if results:
