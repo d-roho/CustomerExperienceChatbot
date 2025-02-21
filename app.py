@@ -406,12 +406,12 @@ if selected_tool == "Luminoso Stats API":
                 st.json(filter_params)
 
                 st.subheader(
-                    f"Drivers | Execution Time: {driver_execution_time:.2f}s"
+                    f"Drivers | Execution Time: {driver_time:.2f}s"
                     ")")
                 st.dataframe(drivers)
 
                 st.subheader(
-                    f"Sentiment | Execution Time: {sentiment_execution_time:.2f}s"
+                    f"Sentiment | Execution Time: {sentiment_time:.2f}s"
                     ")")
                 st.dataframe(sentiment)
 

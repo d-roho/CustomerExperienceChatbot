@@ -1,4 +1,8 @@
-Parralellization |  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
+Parralellization 
+- Luminoso
+- Pinecone Retrieval
+
+|  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
 Slides
 
 DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Improvements  
