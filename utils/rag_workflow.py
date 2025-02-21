@@ -79,18 +79,18 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, themes: 1,
         luminoso_stats = LuminosoStats()
         client = luminoso_stats.initialize_client()
 
+        filter_to_use = state["filters"]
         if themes == 0:
             # remove themes for quicker processing
-            filter = state['filters']
-            filter['themes'] = []
-            drivers = luminoso_stats.fetch_drivers(client, filter)
-            sentiment = luminoso_stats.fetch_sentiment(client, filter)
+            filter_to_use = state['filters'].copy()
+            filter_to_use['themes'] = []
 
-        else:
-            # Get both drivers and sentiment analysis
-            drivers = luminoso_stats.fetch_drivers(client, state["filters"])
-            sentiment = luminoso_stats.fetch_sentiment(client,
-                                                       state["filters"])
+        # Run API calls concurrently
+        drivers_task = asyncio.create_task(luminoso_stats.fetch_drivers(client, filter_to_use))
+        sentiment_task = asyncio.create_task(luminoso_stats.fetch_sentiment(client, filter_to_use))
+        
+        # Wait for both tasks to complete
+        drivers, sentiment = await asyncio.gather(drivers_task, sentiment_task)
 
         state["luminoso_results"] = {
             "drivers": drivers.to_dict(),

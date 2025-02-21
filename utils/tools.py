@@ -34,8 +34,8 @@ class LuminosoStats:
             raise Exception(
                 f"Failed to initialize Luminoso API client: {str(e)}")
 
-    def fetch_drivers(self, client, filter):
-        """Fetch drivers for given filters and concepts."""
+    async def fetch_drivers(self, client, filter):
+        """Fetch drivers for given filters and concepts asynchronously."""
         try:
             start_time = time.time()
 
