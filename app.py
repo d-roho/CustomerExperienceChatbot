@@ -506,8 +506,8 @@ elif selected_tool == "Metadata Filter RAG Search":
                 rerank_time = time.time()  #Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    for subset_idx in results:
-                        subset_data = results[subset_idx]
+                    for key in results.keys():
+                        subset_data = results[key]
                         subset_data['processed_results'] = vector_store.rerank_results(
                             query_filter, subset_data['processed_results'])
                     rerank_execution_time = time.time() - rerank_time  #Stop timer
@@ -525,7 +525,7 @@ elif selected_tool == "Metadata Filter RAG Search":
                     st.code(response, language="text")
 
                     st.subheader(
-                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s"
+                        f"Context Used | Pinecone Retrieval Time: {pinecone_execution_time:.2f}s | Reranking Time: {rerank_execution_time:.2f}s"
                     )
                     st.code(context, language="text")
                 else:
