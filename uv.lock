@@ -1982,6 +1982,7 @@ name = "repl-nix-workspace"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "anthropic" },
     { name = "duckdb" },
     { name = "duckdb-engine" },
@@ -2001,6 +2002,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.11.12" },
     { name = "anthropic", specifier = ">=0.45.2" },
     { name = "duckdb", specifier = ">=1.2.0" },
     { name = "duckdb-engine", specifier = ">=0.15.0" },
