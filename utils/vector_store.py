@@ -180,8 +180,8 @@ class VectorStore:
                 subset_combinations = list(
                     itertools.product(*subset_options_merged))
             else:
-                subset_combinations = []
-            print(subset_combination)
+                subset_combinations = [()]
+            print("Subset combinations:", subset_combinations)
             for combo_idx, combo in enumerate(subset_combinations):
 
                 FIELD_MAPPING = {
