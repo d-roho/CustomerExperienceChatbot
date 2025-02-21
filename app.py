@@ -408,13 +408,18 @@ if selected_tool == "Luminoso Stats API":
                 st.subheader(
                     f"Drivers | Execution Time: {driver_time:.2f}s"
                     ")")
-                st.dataframe(drivers)
 
+                for key in drivers.keys():
+                    st.subheader(f"Theme: {key}")
+                    st.dataframe(drivers[key])
+    
                 st.subheader(
                     f"Sentiment | Execution Time: {sentiment_time:.2f}s"
                     ")")
-                st.dataframe(sentiment)
-
+                for key in  sentiment.keys():
+                    st.subheader(f"Theme: {key}")
+                    st.dataframe(sentiment[key])
+    
             except Exception as e:
                 st.error(f"Luminoso Stats Retrieval failed: {str(e)}")
 

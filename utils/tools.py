@@ -7,6 +7,7 @@ import datetime
 import time
 import asyncio
 
+
 class LuminosoStats:
 
     def __init__(self):
@@ -134,22 +135,27 @@ class LuminosoStats:
             counter = 0
             # themes = 0
             api_start_time = time.time()
+            drivers_dict = {}
             if themes == 1:
                 print(drivers_exist)
+
                 async def fetch_driver(theme):
                     concept = {"type": "concept_list", 'name': theme}
-                    result = await asyncio.to_thread(
-                        lambda: client.get('/concepts/score_drivers/',
-                                         score_field="Overall Rating",
-                                         concept_selector=concept,
-                                         filter=filters if filters_exist == 1 else None))
+                    result = await asyncio.to_thread(lambda: client.get(
+                        '/concepts/score_drivers/',
+                        score_field="Overall Rating",
+                        concept_selector=concept,
+                        filter=filters if filters_exist == 1 else None))
                     return pd.DataFrame(result)
 
                 # Create tasks for all themes
                 tasks = [fetch_driver(theme) for theme in drivers_exist]
-                
+
                 # Execute all tasks concurrently
                 results = await asyncio.gather(*tasks)
+
+                for idx in range(drivers_exist):
+                    df = results[idx]
                     df = df.drop(columns=[
                         'color', 'texts', 'exact_term_ids',
                         'excluded_term_ids', 'vectors', 'exact_match_count'
@@ -187,23 +193,16 @@ class LuminosoStats:
                     df = df.rename(columns=column_mapping)
                     if counter == 0:
                         api_time = time.time() - api_start_time
-                        print(f"First API call and processing time: {api_time:.2f}s")
+                        print(f"Cumulative processing time: {api_time:.2f}s")
                     print(df)
-                    if counter == 0:
-                        df_deep_copy = df.copy(deep=True)
-                    else:
-                        df_to_merge = df.copy(deep=True)
-                        df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
-                    counter += 1
-                    print(len(df_deep_copy))
-                    results.append(df)
+                    drivers_dict[drivers_exist[idx]] = df.to_dict()
 
             else:
-                result = await asyncio.to_thread(
-                    lambda: client.get('/concepts/score_drivers/',
-                                        score_field="Overall Rating",
-                                        limit=50,
-                                        filter=filters if filters_exist == 1 else None))
+                result = await asyncio.to_thread(lambda: client.get(
+                    '/concepts/score_drivers/',
+                    score_field="Overall Rating",
+                    limit=50,
+                    filter=filters if filters_exist == 1 else None))
 
                 df = pd.DataFrame(result)
                 df = df.drop(columns=[
@@ -238,11 +237,11 @@ class LuminosoStats:
                 # Rename the columns using the mapping
                 df = df.rename(columns=column_mapping)
                 print(df)
-                df_deep_copy = df.copy(deep=True)
+                drivers_dict['generic'] = df.to_dict()
 
             total_time = time.time() - start_time
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
-            return df_deep_copy, total_time
+            return drivers_dict, total_time
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Drivers: {str(e)}")
 
@@ -344,19 +343,29 @@ class LuminosoStats:
             print(filters)
             counter = 0
             api_start_time = time.time()
+            sentiments_dict = {}
             # themes = 0
             if themes == 1:
                 print(sentiments_exist)
-                results = []
-                for theme in sentiments_exist:
+
+                async def fetch_sentiment(theme):
                     concept = {"type": "concept_list", 'name': theme}
-                    result = await asyncio.to_thread(
-                        lambda: client.get('/concepts/sentiment/',
-                                            concept_selector=concept,
-                                            filter=filters if filters_exist == 1 else None))
+                    result = await asyncio.to_thread(lambda: client.get(
+                        '/concepts/sentiment/',
+                        concept_selector=concept,
+                        filter=filters if filters_exist == 1 else None))
+                    return result
+
+                # Create tasks for all themes
+                tasks = [fetch_sentiment(theme) for theme in sentiments_exist]
+
+                # Execute all tasks concurrently
+                results = await asyncio.gather(*tasks)
+
+                for idx in range(sentiments_exist):
 
                     rows = []
-                    for concept in result['match_counts']:
+                    for concept in results[idx]:
                         row = {
                             'Theme Name':
                             concept['name'],
@@ -370,45 +379,43 @@ class LuminosoStats:
                             concept['sentiment_share']['negative']
                         }
                         rows.append(row)
-                        filter_count = result['filter_count']
+                        filter_count = results[idx]['filter_count']
 
                 # Create DataFrame
                     df = pd.DataFrame(rows)
                     df['Proportion of Subset With Theme'] = df[
                         'Proportion of Subset With Theme'] / filter_count
-                    if counter == 0:
-                        df_deep_copy = df.copy(deep=True)
-                    else:
-                        df_to_merge = df.copy(deep=True)
-                        df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
-                    counter += 1
-                    print(len(df_deep_copy))
-                    df_deep_copy = df_deep_copy.sort_values(
-                        by='Proportion of Subset With Theme', ascending=False)
-                    df_deep_copy = df_deep_copy.head(50)
-                    results.append(df)
+                    sentiments_dict[sentiments_exist[idx]] = df.to_dict()
 
             else:
-                result = await asyncio.to_thread(
-                    lambda: client.get('/concepts/sentiment/',
-                                        concept_selector={
-                                            "type": "top",
-                                            'limit': 50
-                                        },
-                                        filter=filters if filters_exist == 1 else None))
+                result = await asyncio.to_thread(lambda: client.get(
+                    '/concepts/sentiment/',
+                    concept_selector={
+                        "type": "top",
+                        'limit': 50
+                    },
+                    filter=filters if filters_exist == 1 else None))
 
                 rows = []
+
                 async def process_concept(concept):
                     return {
-                        'Theme Name': concept['name'],
-                        'Proportion of Positive Mentions': concept['sentiment_share']['positive'],
-                        'Proportion of Neutral Mentions': concept['sentiment_share']['neutral'],
-                        'Proportion of Negative Mentions': concept['sentiment_share']['negative']
+                        'Theme Name':
+                        concept['name'],
+                        'Proportion of Positive Mentions':
+                        concept['sentiment_share']['positive'],
+                        'Proportion of Neutral Mentions':
+                        concept['sentiment_share']['neutral'],
+                        'Proportion of Negative Mentions':
+                        concept['sentiment_share']['negative']
                     }
 
                 # Create tasks for all concepts
-                tasks = [process_concept(concept) for concept in result['match_counts']]
-                
+                tasks = [
+                    process_concept(concept)
+                    for concept in result['match_counts']
+                ]
+
                 # Execute all tasks concurrently
                 rows = await asyncio.gather(*tasks)
                 filter_count = result['filter_count']
@@ -417,31 +424,10 @@ class LuminosoStats:
                 df = pd.DataFrame(rows)
                 # df['Proportion of Subset With Theme'] = df['Proportion of Subset With Theme']/filter_count
                 print(df)
-                df_deep_copy = df.copy(deep=True)
+                sentiments_dict['generic'] = df.to_dict()
 
             total_time = time.time() - start_time
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
-            return df_deep_copy, total_time
+            return sentiments_dict, total_time
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
-
-# async def run_tasks():
-#     loop = asyncio.get_event_loop()
-#     lumin_client = LuminosoStats().initialize_client()
-#     filter_params = {"themes":["Positive", "Negative"], "rating_min":[3], "rating_max":[5]} # Example filter
-#     drivers_task = asyncio.create_task(LuminosoStats().fetch_drivers(lumin_client, filter_params))
-#     sentiment_task = asyncio.create_task(LuminosoStats().fetch_sentiment(lumin_client, filter_params))
-#     results = await asyncio.gather(drivers_task, sentiment_task)
-#     return results[0][0], results[0][1], results[1][0], results[1][1]
-
-# async def main():
-#     drivers_df, drivers_time, sentiment_df, sentiment_time = await run_tasks()
-#     print("Drivers Data:")
-#     print(drivers_df)
-#     print(f"Drivers Fetch Time: {drivers_time:.2f} seconds")
-#     print("\nSentiment Data:")
-#     print(sentiment_df)
-#     print(f"Sentiment Fetch Time: {sentiment_time:.2f} seconds")
-
-# if __name__ == "__main__":
-#     asyncio.run(main())
