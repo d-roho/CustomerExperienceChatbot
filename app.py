@@ -451,7 +451,7 @@ elif selected_tool == "Basic RAG Search":
                 rerank_time = time.time()  #Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    results = vector_store.rerank_results(query_basic, results)
+                    results = asyncio.run(vector_store.rerank_results(query_basic, results))
                     rerank_execution_time = time.time(
                     ) - rerank_time  #Stop timer
 
