@@ -6,7 +6,6 @@ import pandas as pd
 import datetime
 import time
 import asyncio
-import aiohttp
 
 class LuminosoStats:
 
@@ -135,86 +134,26 @@ class LuminosoStats:
             counter = 0
             # themes = 0
             api_start_time = time.time()
-            headers = {"Authorization": f"Token {self.luminoso_token}"}
-            async with aiohttp.ClientSession() as session:
-                if themes == 1:
-                    print(drivers_exist)
-                    results = []
-                    for theme in drivers_exist:
-                        concept = {"type": "concept_list", 'name': theme}
-                        url = f"{self.luminoso_url}/concepts/score_drivers/"
-                        params = {
-                            "score_field": "Overall Rating",
-                            "concept_selector": json.dumps(concept),
-                            "filter": json.dumps(filters) if filters_exist == 1 else None
-                        }
-                        async with session.get(url, headers=headers, params=params) as response:
-                            result = await response.json()
-
-                        df = pd.DataFrame(result)
-                        df = df.drop(columns=[
-                            'color', 'texts', 'exact_term_ids',
-                            'excluded_term_ids', 'vectors', 'exact_match_count'
-                        ])
-                        try:
-                            df.drop(columns=['shared_concept_id'], inplace=True)
-                        except:
-                            continue
-                        # Select numeric columns (excluding 'name')
-                        numeric_cols = df.select_dtypes(include=['number']).columns
-
-                        # Normalize each numeric column
-                        for col in numeric_cols:
-                            min_val = df[col].min()
-                            max_val = df[col].max()
-                            if col in ['average_score', 'baseline']:
-                                # Handle constant columns by setting to 0.5
-                                df[col] = df[col] / 5.0
-                            elif col == 'impact':
-                                df[col] = df[col]
-                            else:
-                                df[col] = (df[col] - min_val) / (max_val - min_val)
-
-                        column_mapping = {
-                            'name': 'Theme Name',
-                            'relevance': 'Normalized Relevance to Subset',
-                            'match_count': 'Matches Found in Subset',
-                            'impact': 'Impact on Score',
-                            'confidence': 'Impact Confidence Level',
-                            'average_score': 'Average Score',
-                            'baseline': 'Baseline Score'
-                        }
-
-                        # Rename the columns using the mapping
-                        df = df.rename(columns=column_mapping)
-                        if counter == 0:
-                            api_time = time.time() - api_start_time
-                            print(f"First API call and processing time: {api_time:.2f}s")
-                        print(df)
-                        if counter == 0:
-                            df_deep_copy = df.copy(deep=True)
-                        else:
-                            df_to_merge = df.copy(deep=True)
-                            df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
-                        counter += 1
-                        print(len(df_deep_copy))
-                        results.append(df)
-
-                else:
-                    url = f"{self.luminoso_url}/concepts/score_drivers/"
-                    params = {
-                        "score_field": "Overall Rating",
-                        "limit": 50,
-                        "filter": json.dumps(filters) if filters_exist == 1 else None
-                    }
-                    async with session.get(url, headers=headers, params=params) as response:
-                        result = await response.json()
+            if themes == 1:
+                print(drivers_exist)
+                results = []
+                for theme in drivers_exist:
+                    concept = {"type": "concept_list", 'name': theme}
+                    result = await asyncio.to_thread(
+                        lambda: client.get('/concepts/score_drivers/',
+                                            score_field="Overall Rating",
+                                            concept_selector=concept,
+                                            filter=filters if filters_exist ==1 else None))
 
                     df = pd.DataFrame(result)
                     df = df.drop(columns=[
-                        'texts', 'exact_term_ids', 'excluded_term_ids', 'vectors',
-                        'exact_match_count'
+                        'color', 'texts', 'exact_term_ids',
+                        'excluded_term_ids', 'vectors', 'exact_match_count'
                     ])
+                    try:
+                        df.drop(columns=['shared_concept_id'], inplace=True)
+                    except:
+                        continue
                     # Select numeric columns (excluding 'name')
                     numeric_cols = df.select_dtypes(include=['number']).columns
 
@@ -242,8 +181,60 @@ class LuminosoStats:
 
                     # Rename the columns using the mapping
                     df = df.rename(columns=column_mapping)
+                    if counter == 0:
+                        api_time = time.time() - api_start_time
+                        print(f"First API call and processing time: {api_time:.2f}s")
                     print(df)
-                    df_deep_copy = df.copy(deep=True)
+                    if counter == 0:
+                        df_deep_copy = df.copy(deep=True)
+                    else:
+                        df_to_merge = df.copy(deep=True)
+                        df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
+                    counter += 1
+                    print(len(df_deep_copy))
+                    results.append(df)
+
+            else:
+                result = await asyncio.to_thread(
+                    lambda: client.get('/concepts/score_drivers/',
+                                        score_field="Overall Rating",
+                                        limit=50,
+                                        filter=filters if filters_exist == 1 else None))
+
+                df = pd.DataFrame(result)
+                df = df.drop(columns=[
+                    'texts', 'exact_term_ids', 'excluded_term_ids', 'vectors',
+                    'exact_match_count'
+                ])
+                # Select numeric columns (excluding 'name')
+                numeric_cols = df.select_dtypes(include=['number']).columns
+
+                # Normalize each numeric column
+                for col in numeric_cols:
+                    min_val = df[col].min()
+                    max_val = df[col].max()
+                    if col in ['average_score', 'baseline']:
+                        # Handle constant columns by setting to 0.5
+                        df[col] = df[col] / 5.0
+                    elif col == 'impact':
+                        df[col] = df[col]
+                    else:
+                        df[col] = (df[col] - min_val) / (max_val - min_val)
+
+                column_mapping = {
+                    'name': 'Theme Name',
+                    'relevance': 'Normalized Relevance to Subset',
+                    'match_count': 'Matches Found in Subset',
+                    'impact': 'Impact on Score',
+                    'confidence': 'Impact Confidence Level',
+                    'average_score': 'Average Score',
+                    'baseline': 'Baseline Score'
+                }
+
+                # Rename the columns using the mapping
+                df = df.rename(columns=column_mapping)
+                print(df)
+                df_deep_copy = df.copy(deep=True)
 
             total_time = time.time() - start_time
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
@@ -349,69 +340,24 @@ class LuminosoStats:
             print(filters)
             counter = 0
             api_start_time = time.time()
-            headers = {"Authorization": f"Token {self.luminoso_token}"}
-            async with aiohttp.ClientSession() as session:
-                if themes == 1:
-                    print(sentiments_exist)
-                    results = []
-                    for theme in sentiments_exist:
-                        concept = {"type": "concept_list", 'name': theme}
-                        url = f"{self.luminoso_url}/concepts/sentiment/"
-                        params = {
-                            "concept_selector": json.dumps(concept),
-                            "filter": json.dumps(filters) if filters_exist == 1 else None
-                        }
-                        async with session.get(url, headers=headers, params=params) as response:
-                            result = await response.json()
-
-                        rows = []
-                        for concept in result['match_counts']:
-                            row = {
-                                'Theme Name':
-                                concept['name'],
-                                'Proportion of Subset With Theme':
-                                concept['match_count'],
-                                'Proportion of Positive Mentions':
-                                concept['sentiment_share']['positive'],
-                                'Proportion of Neutral Mentions':
-                                concept['sentiment_share']['neutral'],
-                                'Proportion of Negative Mentions':
-                                concept['sentiment_share']['negative']
-                            }
-                            rows.append(row)
-                            filter_count = result['filter_count']
-
-                        # Create DataFrame
-                        df = pd.DataFrame(rows)
-                        df['Proportion of Subset With Theme'] = df[
-                            'Proportion of Subset With Theme'] / filter_count
-                        if counter == 0:
-                            df_deep_copy = df.copy(deep=True)
-                        else:
-                            df_to_merge = df.copy(deep=True)
-                            df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
-                        counter += 1
-                        print(len(df_deep_copy))
-                        df_deep_copy = df_deep_copy.sort_values(
-                            by='Proportion of Subset With Theme', ascending=False)
-                        df_deep_copy = df_deep_copy.head(50)
-                        results.append(df)
-
-                else:
-                    url = f"{self.luminoso_url}/concepts/sentiment/"
-                    params = {
-                        "concept_selector": json.dumps({"type": "top", 'limit': 50}),
-                        "filter": json.dumps(filters) if filters_exist == 1 else None
-                    }
-                    async with session.get(url, headers=headers, params=params) as response:
-                        result = await response.json()
+            # themes = 0
+            if themes == 1:
+                print(sentiments_exist)
+                results = []
+                for theme in sentiments_exist:
+                    concept = {"type": "concept_list", 'name': theme}
+                    result = await asyncio.to_thread(
+                        lambda: client.get('/concepts/sentiment/',
+                                            concept_selector=concept,
+                                            filter=filters if filters_exist == 1 else None))
 
                     rows = []
                     for concept in result['match_counts']:
                         row = {
                             'Theme Name':
                             concept['name'],
-                            # 'Proportion of Subset With Theme': concept['match_count'],
+                            'Proportion of Subset With Theme':
+                            concept['match_count'],
                             'Proportion of Positive Mentions':
                             concept['sentiment_share']['positive'],
                             'Proportion of Neutral Mentions':
@@ -420,13 +366,54 @@ class LuminosoStats:
                             concept['sentiment_share']['negative']
                         }
                         rows.append(row)
-                    filter_count = result['filter_count']
+                        filter_count = result['filter_count']
 
-                    # Create DataFrame
+                # Create DataFrame
                     df = pd.DataFrame(rows)
-                    # df['Proportion of Subset With Theme'] = df['Proportion of Subset With Theme']/filter_count
-                    print(df)
-                    df_deep_copy = df.copy(deep=True)
+                    df['Proportion of Subset With Theme'] = df[
+                        'Proportion of Subset With Theme'] / filter_count
+                    if counter == 0:
+                        df_deep_copy = df.copy(deep=True)
+                    else:
+                        df_to_merge = df.copy(deep=True)
+                        df_deep_copy = pd.concat([df_deep_copy, df_to_merge])
+                    counter += 1
+                    print(len(df_deep_copy))
+                    df_deep_copy = df_deep_copy.sort_values(
+                        by='Proportion of Subset With Theme', ascending=False)
+                    df_deep_copy = df_deep_copy.head(50)
+                    results.append(df)
+
+            else:
+                result = await asyncio.to_thread(
+                    lambda: client.get('/concepts/sentiment/',
+                                        concept_selector={
+                                            "type": "top",
+                                            'limit': 50
+                                        },
+                                        filter=filters if filters_exist == 1 else None))
+
+                rows = []
+                for concept in result['match_counts']:
+                    row = {
+                        'Theme Name':
+                        concept['name'],
+                        # 'Proportion of Subset With Theme': concept['match_count'],
+                        'Proportion of Positive Mentions':
+                        concept['sentiment_share']['positive'],
+                        'Proportion of Neutral Mentions':
+                        concept['sentiment_share']['neutral'],
+                        'Proportion of Negative Mentions':
+                        concept['sentiment_share']['negative']
+                    }
+                    rows.append(row)
+                filter_count = result['filter_count']
+
+                # Create DataFrame
+                df = pd.DataFrame(rows)
+                # df['Proportion of Subset With Theme'] = df['Proportion of Subset With Theme']/filter_count
+                print(df)
+                df_deep_copy = df.copy(deep=True)
 
             total_time = time.time() - start_time
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
