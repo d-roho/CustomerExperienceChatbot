@@ -10,9 +10,6 @@ import asyncio
 import itertools
 
 
-
-
-
 class VectorStore:
 
     def __init__(self, api_key: str, environment: str, index_name: str):
@@ -165,8 +162,14 @@ class VectorStore:
             filters['years'] = years
 
             subset_options_merged = []
-            date_types = ['year_start', 'year_end', 'month_start', 'month_end']
-            subset_options_1 = [filters[subset] for subset in filters['subsets'] if subset not in date_types]
+
+            date_types = [
+                'year_start', 'year_end', 'month_start', 'month_end', 'year'
+            ]
+            subset_options_1 = [
+                filters[subset] for subset in filters['subsets']
+                if subset not in date_types
+            ]
             subset_options_merged.extend(subset_options_1)
 
             has_date = set(date_types) & set(filters['subsets'])
@@ -174,10 +177,11 @@ class VectorStore:
                 subset_options_merged.append(years)
 
             if subset_options_merged:
-                subset_combinations = list(itertools.product(*subset_options_merged))
+                subset_combinations = list(
+                    itertools.product(*subset_options_merged))
             else:
                 subset_combinations = []
-
+            print(subset_combination)
             for combo_idx, combo in enumerate(subset_combinations):
 
                 FIELD_MAPPING = {
@@ -216,24 +220,32 @@ class VectorStore:
 
                     if filters.get('year_start'):
                         if filters.get('month_start'):
-                            start_unix = get_unix_time(filters['month_start'][0], filters['year_start'][0])
+                            start_unix = get_unix_time(
+                                filters['month_start'][0],
+                                filters['year_start'][0])
                         else:
-                            start_unix = get_unix_time(1, filters['year_start'][0])
+                            start_unix = get_unix_time(
+                                1, filters['year_start'][0])
                         date_conditions['$gte'] = start_unix
 
                     if filters.get('year_end'):
                         if filters.get('month_end'):
-                            end_unix = get_unix_time(filters['month_end'][0], filters['year_end'][0])
+                            end_unix = get_unix_time(filters['month_end'][0],
+                                                     filters['year_end'][0])
                         else:
-                            end_unix = get_unix_time(12, filters['year_end'][0])
+                            end_unix = get_unix_time(12,
+                                                     filters['year_end'][0])
                         date_conditions['$lte'] = end_unix
 
                     if date_conditions:
                         filter_query['date_unix'] = date_conditions
 
                     for key in filters:
-                        if key in ['rating_min', 'rating_max', 'subsets', 'month_start', 'year_start',
-                                   'month_end', 'year_end']:
+                        if key in [
+                                'rating_min', 'rating_max', 'subsets',
+                                'month_start', 'year_start', 'month_end',
+                                'year_end'
+                        ]:
                             continue
 
                         values = filters[key]
@@ -246,16 +258,22 @@ class VectorStore:
                             if key.lower() == 'themes':
                                 if 'themes' in filters['subsets']:
                                     idx = filters['subsets'].index('themes')
-                                    filter_query[combo[idx]] = {'$exists': true}
+                                    filter_query[combo[idx]] = {
+                                        '$exists': true
+                                    }
 
                                 else:
-                                    filter_query['$or'] = [
-                                        {theme: {'$exists': true}} for theme in filters[key]
-                                    ]
+                                    filter_query['$or'] = [{
+                                        theme: {
+                                            '$exists': true
+                                        }
+                                    } for theme in filters[key]]
                             else:
                                 if mongo_field in filters['subsets']:
                                     idx = filters['subsets'].index(mongo_field)
-                                    filter_query[mongo_field] = {'$in': combo[idx]}
+                                    filter_query[mongo_field] = {
+                                        '$in': combo[idx]
+                                    }
                                 else:
                                     filter_query[mongo_field] = {'$eq': values}
 
@@ -266,27 +284,37 @@ class VectorStore:
                                            filter=filter_query,
                                            include_metadata=True)
 
-                print(f"Successfully retrieved {len(results['matches'])} results")
+                print(
+                    f"Successfully retrieved {len(results['matches'])} results"
+                )
 
                 processed_results = []
                 for match in results.matches:
                     stored_data = self.db.get_chunk(match.id, index_name)
                     if stored_data:
                         processed_results.append({
-                            'text': stored_data['text'],
-                            'metadata': stored_data['metadata'],
-                            'header': match.metadata['header'],
-                            'score': match.score
+                            'text':
+                            stored_data['text'],
+                            'metadata':
+                            stored_data['metadata'],
+                            'header':
+                            match.metadata['header'],
+                            'score':
+                            match.score
                         })
                 subset_info = {}
                 for idx, sub in enumerate(filters['subsets']):
                     subset_info[sub] = combo[idx]
-                reviews_dict[combo_idx] = {'subset_info': subset_info, 'processed_results': processed_results}
+                reviews_dict[combo_idx] = {
+                    'subset_info': subset_info,
+                    'processed_results': processed_results
+                }
 
             return reviews_dict
 
         except Exception as e:
             raise RuntimeError(f"Failed to filter search: {str(e)}")
+
     def rerank_results(self, query: str,
                        results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity."""
@@ -304,7 +332,7 @@ class VectorStore:
                 print(result)
                 text = f"{result['header']}\n{result['text']}"
                 pairs.append([query, text])
-            
+
             scores = model.predict(pairs)
 
             # Update scores
@@ -327,4 +355,3 @@ class VectorStore:
             print(f"Warning: Table not retrieved: {str(e)}")
 
         return reviews
-

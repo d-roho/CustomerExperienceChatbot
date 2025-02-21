@@ -360,7 +360,7 @@ with col1:
                                  key="max_rating")
 
 subsets = st.multiselect("Select Attributes to Subset Data on",
-               ['Year','Cities', 'States', 'Locations', 'Themes'],
+               ['year','city', 'state', 'location', 'themes'],
                key='subsets_select')
 selected_tool = st.selectbox(
     "Select Tool",
