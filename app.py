@@ -391,7 +391,7 @@ if selected_tool == "Luminoso Stats API":
                     sentiment_task = lumin_class.fetch_sentiment(lumin_client, filter_params)
                     return await asyncio.gather(drivers_task, sentiment_task)
 
-                drivers, sentiment = asyncio.run(run_tasks())
+                drivers, driver_execution_time, sentiment, sentiment_execution_time = asyncio.run(run_tasks())
 
                 # Calculate execution times
                 execution_time = time.time() - start_time

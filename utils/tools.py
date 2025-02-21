@@ -251,7 +251,7 @@ class LuminosoStats:
 
             total_time = time.time() - start_time
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
-            return df_deep_copy
+            return df_deep_copy, total_time
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Drivers: {str(e)}")
 
@@ -445,6 +445,6 @@ class LuminosoStats:
 
             total_time = time.time() - start_time
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
-            return df_deep_copy
+            return df_deep_copy, total_time
         except Exception as e:
             raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
