@@ -362,7 +362,7 @@ class LuminosoStats:
                 # Execute all tasks concurrently
                 results = await asyncio.gather(*tasks)
 
-                for idx in range(sentiments_exist):
+                for idx, theme in enumerate(sentiments_exist):
 
                     rows = []
                     for concept in results[idx]:
