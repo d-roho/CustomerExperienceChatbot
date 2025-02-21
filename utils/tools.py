@@ -136,16 +136,20 @@ class LuminosoStats:
             api_start_time = time.time()
             if themes == 1:
                 print(drivers_exist)
-                results = []
-                for theme in drivers_exist:
+                async def fetch_driver(theme):
                     concept = {"type": "concept_list", 'name': theme}
                     result = await asyncio.to_thread(
                         lambda: client.get('/concepts/score_drivers/',
-                                            score_field="Overall Rating",
-                                            concept_selector=concept,
-                                            filter=filters if filters_exist ==1 else None))
+                                         score_field="Overall Rating",
+                                         concept_selector=concept,
+                                         filter=filters if filters_exist == 1 else None))
+                    return pd.DataFrame(result)
 
-                    df = pd.DataFrame(result)
+                # Create tasks for all themes
+                tasks = [fetch_driver(theme) for theme in drivers_exist]
+                
+                # Execute all tasks concurrently
+                results = await asyncio.gather(*tasks)
                     df = df.drop(columns=[
                         'color', 'texts', 'exact_term_ids',
                         'excluded_term_ids', 'vectors', 'exact_match_count'
@@ -394,19 +398,19 @@ class LuminosoStats:
                                         filter=filters if filters_exist == 1 else None))
 
                 rows = []
-                for concept in result['match_counts']:
-                    row = {
-                        'Theme Name':
-                        concept['name'],
-                        # 'Proportion of Subset With Theme': concept['match_count'],
-                        'Proportion of Positive Mentions':
-                        concept['sentiment_share']['positive'],
-                        'Proportion of Neutral Mentions':
-                        concept['sentiment_share']['neutral'],
-                        'Proportion of Negative Mentions':
-                        concept['sentiment_share']['negative']
+                async def process_concept(concept):
+                    return {
+                        'Theme Name': concept['name'],
+                        'Proportion of Positive Mentions': concept['sentiment_share']['positive'],
+                        'Proportion of Neutral Mentions': concept['sentiment_share']['neutral'],
+                        'Proportion of Negative Mentions': concept['sentiment_share']['negative']
                     }
-                    rows.append(row)
+
+                # Create tasks for all concepts
+                tasks = [process_concept(concept) for concept in result['match_counts']]
+                
+                # Execute all tasks concurrently
+                rows = await asyncio.gather(*tasks)
                 filter_count = result['filter_count']
 
                 # Create DataFrame
