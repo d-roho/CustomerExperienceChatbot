@@ -360,7 +360,7 @@ with col1:
                                  key="max_rating")
 
 subsets = st.multiselect("Select Attributes to Subset Data on",
-               ['year','city', 'state', 'location', 'themes'],
+               ['year','cities', 'states', 'location', 'themes'],
                key='subsets_select')
 selected_tool = st.selectbox(
     "Select Tool",
@@ -373,11 +373,12 @@ if selected_tool == "Luminoso Stats API":
             "cities": selected_cities,
             "states": selected_states,
             "themes": selected_themes,
+            "location": selected_location,
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],
             "year_end": [end_year],
-            'subsets': []
+            'subsets': subsets
         }
 
         lumin_class = LuminosoStats()
@@ -482,6 +483,7 @@ elif selected_tool == "Metadata Filter RAG Search":
             "cities": selected_cities,
             "states": selected_states,
             "themes": selected_themes,
+            "location":selected_location,
             "month_start": [start_month],
             "year_start": [start_year],
             "month_end": [end_month],

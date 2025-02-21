@@ -1,8 +1,10 @@
 Practicality - Customer Requirements!!!, Speed & Consistency!!!
 
 Parralellization 
-- Luminoso
-- Pinecone Retrieval
+- Pinecone Retrieval | Logic and Bugs, Reranking
+- Luminoso - subsets
+- Agentic update code
+- Prompting
 
 |  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
 Slides

@@ -150,6 +150,7 @@ class VectorStore:
         """Search for similar texts using METADATA FILTERS."""
 
         try:
+            print(f"Subsets: {filters['subsets']}")
             reviews_dict = {}
             print(f"Getting embedding for query: {query[:50]}...")
             query_embedding = client.get_embeddings([query])[0]
@@ -272,7 +273,7 @@ class VectorStore:
                                 if mongo_field in filters['subsets']:
                                     idx = filters['subsets'].index(mongo_field)
                                     filter_query[mongo_field] = {
-                                        '$in': combo[idx]
+                                        '$in': [combo[idx]]
                                     }
                                 else:
                                     filter_query[mongo_field] = {'$eq': values}
@@ -309,6 +310,7 @@ class VectorStore:
                     'subset_info': subset_info,
                     'processed_results': processed_results
                 }
+                print(f"Subset {combo_idx} complete")
 
             return reviews_dict
 
