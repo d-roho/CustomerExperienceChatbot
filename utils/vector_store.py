@@ -259,13 +259,13 @@ class VectorStore:
                                 if 'themes' in filters['subsets']:
                                     idx = filters['subsets'].index('themes')
                                     filter_query[combo[idx]] = {
-                                        '$exists': true
+                                        '$exists': True
                                     }
 
                                 else:
                                     filter_query['$or'] = [{
                                         theme: {
-                                            '$exists': true
+                                            '$exists': True
                                         }
                                     } for theme in filters[key]]
                             else:
@@ -293,22 +293,13 @@ class VectorStore:
                     stored_data = self.db.get_chunk(match.id, index_name)
                     if stored_data:
                         processed_results.append({
-                            'text':
-                            stored_data['text'],
-                            'metadata':
-                            stored_data['metadata'],
-                            'header':
-                            match.metadata['header'],
-                            'score':
-                            match.score
+                            'text': stored_data['text'],
+                            'metadata': stored_data['metadata'],
+                            'header': match.metadata['header'],
+                            'score': match.score
                         })
-                subset_info = {}
-                for idx, sub in enumerate(filters['subsets']):
-                    subset_info[sub] = combo[idx]
-                reviews_dict[combo_idx] = {
-                    'subset_info': subset_info,
-                    'processed_results': processed_results
-                }
+                    
+                reviews_dict[combo_idx] = processed_results
 
             return reviews_dict
 
