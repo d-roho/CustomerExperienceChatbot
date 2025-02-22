@@ -19,7 +19,8 @@ Themes Daylight upload
 
 
 'coroutine' object is not subscriptable:
-LangGraph error. Fix = execute with asyncio  
+LangGraph error. Fix = execute with asyncio.run
+
 
 Bottlenecks:
 

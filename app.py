@@ -13,6 +13,9 @@ from utils.theme_workflow import process_themes
 import asyncio
 from datetime import datetime
 from utils.tools import LuminosoStats
+import nest_asyncio
+nest_asyncio.apply()
+
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -507,8 +510,6 @@ elif selected_tool == "Metadata Filter RAG Search":
                 rerank_execution_time = 0
                 if use_reranking and results:
                     try:
-                        import nest_asyncio
-                        nest_asyncio.apply()
 
                         async def rerank_data(subset):
                             return await vector_store.rerank_results(query_filter, subset['processed_results'])
