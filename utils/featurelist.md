@@ -1,12 +1,15 @@
 Practicality - Customer Requirements!!!, Speed & Consistency!!!
 
 Parralellization 
-- Luminoso - subsets
+- Fix: 
+- Optimize: Generate Theme (Add timing, parallelization) |  Sentiment Stats | Reranking 
+- Stylize - VS and TG | Tools 
+- Luminoso
 - Pinecone Retrieval
 - Agentic update code
-- Prompting
 
-|  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
+
+Prompting & Tuning & TESTING |  Subseting, Chart ADA, Make more agentic (flexible tool use process)    
 Slides
 
 DEMO - Replit (MULTIPLE users test with Aryan) +  Code Breakdown + Luminoso + Impact + Challenges & Improvements  

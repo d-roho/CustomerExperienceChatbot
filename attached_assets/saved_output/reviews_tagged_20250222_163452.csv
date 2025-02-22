@@ -1,0 +1,24 @@
+Text,string_City,score_Count_People_Found_Review_Helpful,date_Date_Created,string_Name,score_Overall_Rating,string_Place_Location,string_State,string_User_Name,raw_tags,themes,subthemes,uuid,Theme_Subthemes
+Great customer service was amazing and I always end up getting something for me - which I love!,Seattle,0.0,2/10/2024 0:00,Mejuri,5,"2621 NE University Village St, Seattle, WA",WA,Evangeline Haak,"{'Exceptional Customer Service & Support': ['customer service'], 'Store Organization & Product Selection': ['getting something']}",Exceptional Customer Service & Support | Store Organization & Product Selection,customer service | getting something,5e9437998fc54af4ac7078e9f10d7943,"{
+    ""Staff expertise and personalized attention"": [""customer service""],
+    ""Store environment and shopping experience"": [""getting something""]
+}"
+"Awful customer service, will not be doing any business with this brand.My husband and I waited in line for ten minutes, to wait another ten minutes to be helped by an extremely rude and disengaged sales woman. She wasnt helpful by any means and seemed to be interested in helping other customers rather than myself.",North York,1.0,2/10/2023 0:00,Mejuri,1,"3401 Dufferin St, North York, ON, Canada",ON,Kaitlin Wilson,"{'Poor Service & Long Wait Times': ['waited', 'ten minutes', 'rude', 'disengaged', 'wasnt helpful'], 'Exceptional Customer Service & Support': ['sales woman', 'helping']}",Poor Service & Long Wait Times | Exceptional Customer Service & Support,waited | ten minutes | rude | disengaged | wasnt helpful | sales woman | helping,c04bafd9d2354378aa4c28df83dd268b,"{
+    ""Inconsistent service quality and staff engagement"": [""customer service"", ""rude"", ""disengaged"", ""wasnt helpful""],
+    ""Customer discrimination and profiling"": [""helping other"", ""rather than""],
+    ""Wait time management"": [""waited"", ""ten minutes""]
+}"
+Waited 20+ minutes and was never helped.,Austin,0.0,1/20/2025 0:00,Mejuri,1,"11700 Domain Blvd Suite 126, Austin, TX",TX,Sarah Luna,"{'Poor Service & Long Wait Times': ['Waited 20+', 'never helped']}",Poor Service & Long Wait Times,Waited 20+ | never helped,d30f1dcd87954e739be760309f2b2ed2,"{
+    ""Wait time management"": [""20+ minutes""],
+    ""Staff expertise and personalized attention"": [""never helped""]
+}"
+Great assistance from Rachel! She was super patient and even sorted out a delayed return on a very busy day at the store!,Vancouver,0.0,2/10/2023 0:00,Mejuri,5,"2166 W 4th Ave, Vancouver, BC, Canada",BC,Saba Ghezili,"{'Exceptional Customer Service & Support': ['great assistance', 'super patient'], 'Complex Returns & Warranty Handling': ['delayed return'], 'Store Ambiance & Try-On Experience': ['busy day']}",Exceptional Customer Service & Support | Complex Returns & Warranty Handling | Store Ambiance & Try-On Experience,great assistance | super patient | delayed return | busy day,e18a9455fabb4329b9e82d685dc6a33f,"{
+    ""Staff expertise and personalized attention"": [""Great assistance"", ""super patient""],
+    ""Restrictive return and warranty processes"": [""delayed return""],
+    ""Store environment and shopping experience"": [""busy day""]
+}"
+Great selection! Super patient staff... Big Bang for your buck!,Los Angeles,0.0,2/10/2020 0:00,Mejuri,5,"8404 Melrose Ave, Los Angeles, CA",CA,Michelle I,"{'Store Organization & Product Selection': ['great selection'], 'Exceptional Customer Service & Support': ['patient staff'], 'Value & Price-Quality Assessment': ['bang buck']}",Store Organization & Product Selection | Exceptional Customer Service & Support | Value & Price-Quality Assessment,great selection | patient staff | bang buck,15282579d1a94cda9b28dfe20a1487b8,"{
+    ""Staff expertise and personalized attention"": [""patient staff""],
+    ""Price-to-quality value assessment"": [""Big Bang""],
+    ""Store environment and shopping experience"": [""Great selection""]
+}"

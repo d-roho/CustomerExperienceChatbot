@@ -6,6 +6,10 @@ import pandas as pd
 import datetime
 import time
 import asyncio
+import utils.tools_funcs
+from utils.vector_funcs import subset_generator, hierarchy_upholder
+import uuid
+import copy
 
 
 class LuminosoStats:
@@ -40,205 +44,95 @@ class LuminosoStats:
         """Fetch drivers for given filters and concepts asynchronously."""
         try:
             start_time = time.time()
+            filter, message = hierarchy_upholder(filter)
+            if 'themes' in filter['subsets']:
+                subset_filter = filter
+                subset_filter['subsets'].remove('themes')
+            else:
+                subset_filter = filter
+            subset_combinations, _ = subset_generator(subset_filter)
 
-            def get_unix_time(month, year):
-                # Create a datetime object for the first day of the given month and year
-                dt = datetime.datetime(year, month, 1, 0, 0, 0)
-
-                # Convert the datetime object to Unix time (seconds since January 1, 1970)
-                unix_time = int(dt.timestamp())
-                return unix_time
-
-            filters = []
-            filters_exist = 0
-            for key in filter.keys():
-                if key == 'themes':
-                    if filter[key]:
-                        drivers_exist = filter[key]
-                        themes = 1
-                    else:
-                        themes = 0
-                if key == 'rating_min':
-                    try:
-                        rat_min = filter[key][0]
-                    except:
-                        rat_min = 0
-
-                    try:
-                        rat_max = filter['rating_max'][0]
-                    except:
-                        rat_max = 5
-
-                    dict = {
-                        "name": 'Overall Rating',
-                        "minimum": rat_min,
-                        "maximum": rat_max
-                    }
-                    print(dict)
-                    filters.append(dict)
-                    filters_exist = 1
-                if key == 'cities':
-                    if filter[key]:
-                        dict = {"name": 'City', "values": filter[key]}
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'location':
-                    if filter[key]:
-                        dict = {
-                            "name": 'Place Location',
-                            "values": filter[key]
-                        }
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'states':
-                    if filter[key]:
-                        dict = {"name": 'State', "values": filter[key]}
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'month_start':
-                    try:
-                        ms = filter[key][0]
-                    except:
-                        ms = 1
-
-                    try:
-                        ys = filter['year_start'][0]
-                    except:
-                        ys = 2019
-
-                    try:
-                        me = filter['month'][0]
-                    except:
-                        me = 12
-
-                    try:
-                        ye = filter['year_end'][0]
-                    except:
-                        ye = 2025
-
-                    start_date = get_unix_time(ms, ys)
-                    end_date = get_unix_time(me, ye)
-                    dict = {
-                        "name": 'Date Created',
-                        "minimum": start_date,
-                        "maximum": end_date
-                    }
-                    filters.append(dict)
-                    filters_exist = 1
+            filters, filters_exist, drivers_exist, themes = utils.tools_funcs.filtering(
+                filter)
 
             filters_time = time.time() - start_time
             print(f"Filters preparation time: {filters_time:.2f}s")
-            print(filters)
+            print(filter)
+            print(f'{message}')
+            print(f'subset_combinations: {subset_combinations}')
             counter = 0
-            # themes = 0
             api_start_time = time.time()
             drivers_dict = {}
             if themes == 1:
-                print(drivers_exist)
+                print(f'Themes: {drivers_exist}')
 
-                async def fetch_driver(theme):
-                    concept = {"type": "concept_list", 'name': theme}
-                    result = await asyncio.to_thread(lambda: client.get(
-                        '/concepts/score_drivers/',
-                        score_field="Overall Rating",
-                        concept_selector=concept,
-                        filter=filters if filters_exist == 1 else None))
-                    return pd.DataFrame(result)
+                if subset_combinations:
+                    print('SUBSETTING')
+                    for combo in subset_combinations:
+                        filters = utils.tools_funcs.combo_breaker(
+                            combo, filter, filters)
 
-                # Create tasks for all themes
-                tasks = [fetch_driver(theme) for theme in drivers_exist]
+                        # Create tasks for all themes
+                        tasks = [
+                            utils.tools_funcs.fetch_driver(
+                                theme, filters, filters_exist, client)
+                            for theme in drivers_exist
+                        ]
 
-                # Execute all tasks concurrently
-                results = await asyncio.gather(*tasks)
+                        # Execute all tasks concurrently
+                        results = await asyncio.gather(*tasks)
 
-                for idx, theme in enumerate(drivers_exist):
-                    df = results[idx]
-                    df = df.drop(columns=[
-                        'color', 'texts', 'exact_term_ids',
-                        'excluded_term_ids', 'vectors', 'exact_match_count'
-                    ])
-                    try:
-                        df.drop(columns=['shared_concept_id'], inplace=True)
-                    except:
-                        continue
-                    # Select numeric columns (excluding 'name')
-                    numeric_cols = df.select_dtypes(include=['number']).columns
+                        for idx, theme in enumerate(drivers_exist):
+                            df = utils.tools_funcs.drivers_processing(
+                                results[idx], api_start_time)
+                            drivers_dict[str(uuid.uuid4())] = {
+                                'df': df.to_dict(),
+                                'subset': copy.deepcopy(filters),
+                                'theme': theme
+                            }
 
-                    # Normalize each numeric column
-                    for col in numeric_cols:
-                        min_val = df[col].min()
-                        max_val = df[col].max()
-                        if col in ['average_score', 'baseline']:
-                            # Handle constant columns by setting to 0.5
-                            df[col] = df[col] / 5.0
-                        elif col == 'impact':
-                            df[col] = df[col]
-                        else:
-                            df[col] = (df[col] - min_val) / (max_val - min_val)
+                else:
+                    tasks = [
+                        utils.tools_funcs.fetch_driver(theme, filters,
+                                                       filters_exist, client)
+                        for theme in drivers_exist
+                    ]
 
-                    column_mapping = {
-                        'name': 'Theme Name',
-                        'relevance': 'Normalized Relevance to Subset',
-                        'match_count': 'Matches Found in Subset',
-                        'impact': 'Impact on Score',
-                        'confidence': 'Impact Confidence Level',
-                        'average_score': 'Average Score',
-                        'baseline': 'Baseline Score'
-                    }
+                    # Execute all tasks concurrently
+                    results = await asyncio.gather(*tasks)
 
-                    # Rename the columns using the mapping
-                    df = df.rename(columns=column_mapping)
-                    if counter == 0:
-                        api_time = time.time() - api_start_time
-                        print(f"Cumulative processing time: {api_time:.2f}s")
-                    print(df)
-                    drivers_dict[drivers_exist[idx]] = df.to_dict()
+                    for idx, theme in enumerate(drivers_exist):
+                        print(results[idx])
+                        df = utils.tools_funcs.drivers_processing(
+                            results[idx], api_start_time)
+                        drivers_dict[str(uuid.uuid4())] = {
+                            'df': df.to_dict(),
+                            'subset': copy.deepcopy(filters),
+                            'theme': theme
+                        }
 
             else:
-                result = await asyncio.to_thread(lambda: client.get(
-                    '/concepts/score_drivers/',
-                    score_field="Overall Rating",
-                    limit=50,
-                    filter=filters if filters_exist == 1 else None))
+                if subset_combinations:
+                    print('SUBSETTING')
+                    drivers_dict = await utils.tools_funcs.process_combinations(subset_combinations, filter, filters, filters_exist, client, api_start_time)
+                
+                else:
+                    
+                    task = [
+                        utils.tools_funcs.fetch_driver(None, filters,
+                                                       filters_exist, client)
+                    ]
+                    result = await asyncio.gather(*task)
 
-                df = pd.DataFrame(result)
-                df = df.drop(columns=[
-                    'texts', 'exact_term_ids', 'excluded_term_ids', 'vectors',
-                    'exact_match_count'
-                ])
-                # Select numeric columns (excluding 'name')
-                numeric_cols = df.select_dtypes(include=['number']).columns
-
-                # Normalize each numeric column
-                for col in numeric_cols:
-                    min_val = df[col].min()
-                    max_val = df[col].max()
-                    if col in ['average_score', 'baseline']:
-                        # Handle constant columns by setting to 0.5
-                        df[col] = df[col] / 5.0
-                    elif col == 'impact':
-                        df[col] = df[col]
-                    else:
-                        df[col] = (df[col] - min_val) / (max_val - min_val)
-
-                column_mapping = {
-                    'name': 'Theme Name',
-                    'relevance': 'Normalized Relevance to Subset',
-                    'match_count': 'Matches Found in Subset',
-                    'impact': 'Impact on Score',
-                    'confidence': 'Impact Confidence Level',
-                    'average_score': 'Average Score',
-                    'baseline': 'Baseline Score'
-                }
-
-                # Rename the columns using the mapping
-                df = df.rename(columns=column_mapping)
-                print(df)
-                drivers_dict['generic'] = df.to_dict()
-
+                    df = pd.DataFrame(result[0])
+                    df = utils.tools_funcs.drivers_processing(
+                        df, api_start_time)
+                    drivers_dict[str(uuid.uuid4())] = {
+                        'df': df.to_dict(),
+                        'subset': copy.deepcopy(filters),
+                        'theme': 'All'
+                    }
+                    print(df)
             total_time = time.time() - start_time
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
             return drivers_dict, total_time
@@ -249,94 +143,16 @@ class LuminosoStats:
         """Fetch sentiment for given filters and concepts asynchronously."""
         try:
             start_time = time.time()
+            filter, message = hierarchy_upholder(filter)
+            if 'themes' in filter['subsets']:
+                subset_filter = filter
+                subset_filter['subsets'].remove('themes')
+            else:
+                subset_filter = filter
+            subset_combinations, _ = subset_generator(subset_filter)
 
-            def get_unix_time(month, year):
-                # Create a datetime object for the first day of the given month and year
-                dt = datetime.datetime(year, month, 1, 0, 0, 0)
-
-                # Convert the datetime object to Unix time (seconds since January 1, 1970)
-                unix_time = int(dt.timestamp())
-                return unix_time
-
-            filters = []
-            filters_exist = 0
-            for key in filter.keys():
-                if key == 'themes':
-                    if filter[key]:
-                        sentiments_exist = filter[key]
-                        themes = 1
-                    else:
-                        themes = 0
-                if key == 'rating_min':
-                    try:
-                        rat_min = filter[key][0]
-                    except:
-                        rat_min = 0
-
-                    try:
-                        rat_max = filter['rating_max'][0]
-                    except:
-                        rat_max = 5
-
-                    dict = {
-                        "name": 'Overall Rating',
-                        "minimum": rat_min,
-                        "maximum": rat_max
-                    }
-                    print(dict)
-                    filters.append(dict)
-                    filters_exist = 1
-                if key == 'cities':
-                    if filter[key]:
-                        dict = {"name": 'City', "values": filter[key]}
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'location':
-                    if filter[key]:
-                        dict = {
-                            "name": 'Place Location',
-                            "values": filter[key]
-                        }
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'states':
-                    if filter[key]:
-                        dict = {"name": 'State', "values": filter[key]}
-                        filters.append(dict)
-                        filters_exist = 1
-
-                if key == 'month_start':
-                    try:
-                        ms = filter[key][0]
-                    except:
-                        ms = 1
-
-                    try:
-                        ys = filter['year_start'][0]
-                    except:
-                        ys = 2019
-
-                    try:
-                        me = filter['month'][0]
-                    except:
-                        me = 12
-
-                    try:
-                        ye = filter['year_end'][0]
-                    except:
-                        ye = 2025
-
-                    start_date = get_unix_time(ms, ys)
-                    end_date = get_unix_time(me, ye)
-                    dict = {
-                        "name": 'Date Created',
-                        "minimum": start_date,
-                        "maximum": end_date
-                    }
-                    filters.append(dict)
-                    filters_exist = 1
+            filters, filters_exist, sentiments_exist, themes = utils.tools_funcs.filtering(
+                filter)
 
             filters_time = time.time() - start_time
             print(f"Filters preparation time: {filters_time:.2f}s")
@@ -347,84 +163,115 @@ class LuminosoStats:
             # themes = 0
             if themes == 1:
                 print(sentiments_exist)
+                if subset_combinations:
+                    for combo in subset_combinations:
+                        filters = utils.tools_funcs.combo_breaker(
+                            combo, filter, filters)
 
-                async def fetch_sentiment(theme):
-                    concept = {"type": "concept_list", 'name': theme}
+                        # Create tasks for all themes
+                        tasks = [
+                            utils.tools_funcs.get_sentiment(
+                                theme, filters, filters_exist, client)
+                            for theme in sentiments_exist
+                        ]
+
+                        # Execute all tasks concurrently
+                        results = await asyncio.gather(*tasks)
+
+                        for idx, theme in enumerate(sentiments_exist):
+                            df = utils.tools_funcs.sentiments_processing(
+                                results[idx], api_start_time)
+
+                            sentiments_dict[str(uuid.uuid4())] = {
+                                'df': df.to_dict(),
+                                'theme': theme,
+                                'subset': copy.deepcopy(filters)
+                            }
+                else:
+                    # Create tasks for all themes
+                    tasks = [
+                        utils.tools_funcs.get_sentiment(
+                            theme, filters, filters_exist, client)
+                        for theme in sentiments_exist
+                    ]
+
+                    # Execute all tasks concurrently
+                    results = await asyncio.gather(*tasks)
+
+                    for idx, theme in enumerate(sentiments_exist):
+                        df = utils.tools_funcs.sentiments_processing(
+                            results[idx], api_start_time)
+
+                        sentiments_dict[str(uuid.uuid4())] = {
+                            'df': df.to_dict(),
+                            'theme': theme,
+                            'subset': copy.deepcopy(filters)
+                        }
+
+            else:
+                if subset_combinations:
+                    print('SUBSETTING')
+                    for idx, combo in enumerate(subset_combinations):
+                        filters = utils.tools_funcs.combo_breaker(
+                            combo, filter, filters)
+
+                        result = await asyncio.to_thread(lambda: client.get(
+                            '/concepts/sentiment/',
+                            concept_selector={
+                                "type": "top",
+                                'limit': 50
+                            },
+                            filter=filters if filters_exist == 1 else None))
+
+                        rows = []
+
+                        # Create tasks for all concepts
+                        tasks = [
+                            utils.tools_funcs.process_concept(concept)
+                            for concept in result['match_counts']
+                        ]
+
+                        # Execute all tasks concurrently
+                        rows = await asyncio.gather(*tasks)
+                        filter_count = result['filter_count']
+
+                        # Create DataFrame
+                        df = pd.DataFrame(rows)
+                        print(df)
+                        sentiments_dict[str(uuid.uuid4())] = {
+                            'df': df.to_dict(),
+                            'theme': 'All',
+                            'subset': copy.deepcopy(filters)
+                        }
+                else:
                     result = await asyncio.to_thread(lambda: client.get(
                         '/concepts/sentiment/',
-                        concept_selector=concept,
+                        concept_selector={
+                            "type": "top",
+                            'limit': 50
+                        },
                         filter=filters if filters_exist == 1 else None))
-                    return result
-
-                # Create tasks for all themes
-                tasks = [fetch_sentiment(theme) for theme in sentiments_exist]
-
-                # Execute all tasks concurrently
-                results = await asyncio.gather(*tasks)
-
-                for idx, theme in enumerate(sentiments_exist):
 
                     rows = []
-                    for concept in results[idx]['match_counts']:
-                        row = {
-                            'Theme Name':
-                            concept['name'],
-                            'Proportion of Subset With Theme':
-                            concept['match_count'],
-                            'Proportion of Positive Mentions':
-                            concept['sentiment_share']['positive'],
-                            'Proportion of Neutral Mentions':
-                            concept['sentiment_share']['neutral'],
-                            'Proportion of Negative Mentions':
-                            concept['sentiment_share']['negative']
-                        }
-                        rows.append(row)
-                    filter_count = results[idx]['filter_count']
+
+                    # Create tasks for all concepts
+                    tasks = [
+                        utils.tools_funcs.process_concept(concept)
+                        for concept in result['match_counts']
+                    ]
+
+                    # Execute all tasks concurrently
+                    rows = await asyncio.gather(*tasks)
+                    filter_count = result['filter_count']
 
                     # Create DataFrame
                     df = pd.DataFrame(rows)
-                    df['Proportion of Subset With Theme'] = df[
-                        'Proportion of Subset With Theme'] / filter_count
-                    sentiments_dict[sentiments_exist[idx]] = df.to_dict()
-
-            else:
-                result = await asyncio.to_thread(lambda: client.get(
-                    '/concepts/sentiment/',
-                    concept_selector={
-                        "type": "top",
-                        'limit': 50
-                    },
-                    filter=filters if filters_exist == 1 else None))
-
-                rows = []
-
-                async def process_concept(concept):
-                    return {
-                        'Theme Name':
-                        concept['name'],
-                        'Proportion of Positive Mentions':
-                        concept['sentiment_share']['positive'],
-                        'Proportion of Neutral Mentions':
-                        concept['sentiment_share']['neutral'],
-                        'Proportion of Negative Mentions':
-                        concept['sentiment_share']['negative']
+                    print(df)
+                    sentiments_dict[str(uuid.uuid4())] = {
+                        'df': df.to_dict(),
+                        'theme': 'All',
+                        'subset': copy.deepcopy(filters)
                     }
-
-                # Create tasks for all concepts
-                tasks = [
-                    process_concept(concept)
-                    for concept in result['match_counts']
-                ]
-
-                # Execute all tasks concurrently
-                rows = await asyncio.gather(*tasks)
-                filter_count = result['filter_count']
-
-                # Create DataFrame
-                df = pd.DataFrame(rows)
-                # df['Proportion of Subset With Theme'] = df['Proportion of Subset With Theme']/filter_count
-                print(df)
-                sentiments_dict['generic'] = df.to_dict()
 
             total_time = time.time() - start_time
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")

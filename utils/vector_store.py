@@ -8,6 +8,7 @@ from utils.db import MotherDuckStore  # New import
 import datetime
 import asyncio
 import itertools
+import utils.vector_funcs
 
 
 class VectorStore:
@@ -126,8 +127,10 @@ class VectorStore:
                     processed_results.append({
                         'text':
                         stored_data['text'],
-                        'metadata':
+                        'md_metadata':
                         stored_data['metadata'],
+                        'pc_metadata':
+                        match['metadata'],
                         'header':
                         match.metadata['header'],
                         'score':
@@ -144,24 +147,13 @@ class VectorStore:
         filters: Dict[str, Any],
         query: str,
         client: Anthropic,
-        top_k: int = 5,
+        top_k: int = 5, subdivide_k: bool = False,
         index_name: str = 'reviews-csv-main',
     ) -> List[Dict[str, Any]]:
         """Search for similar texts using METADATA FILTERS."""
 
         try:
-            message = 'Removed lower level subsets: '
-            if 'states' in filters['subsets']:
-                if 'cities' in filters['subsets']:
-                    filters['subsets'].remove('cities')
-                    message += 'cities, '
-                if 'location' in filters['subsets']:
-                    filters['subsets'].remove('location')
-                    message += 'location,'
-            if 'cities' in filters['subsets']:
-                if 'location' in filters['subsets']:
-                    filters['subsets'].remove('location')
-                    message += 'location,'
+            filters, message = utils.vector_funcs.hierarchy_upholder(filters)
 
             print(f"Filter: {filters} \n {message}")
             reviews_dict = {}
@@ -169,164 +161,19 @@ class VectorStore:
             query_embedding = client.get_embeddings([query])[0]
             print(f"Searching Pinecone with top_k={top_k}")
 
-            year_start = filters.get('year_start', [2019])[0]
-            year_end = filters.get('year_end', [2025])[0]
-            year_range = year_end - year_start + 1
-            years = [year_start + i for i in range(year_range)]
-            filters['years'] = years
-
-            subset_options_merged = []
-
-            date_types = [
-                'year_start', 'year_end', 'month_start', 'month_end', 'year'
-            ]
-            subset_options_1 = [
-                filters[subset] for subset in filters['subsets']
-                if subset not in date_types
-            ]
-            subset_options_merged.extend(subset_options_1)
-
-            has_date = set(date_types) & set(filters['subsets'])
-            if has_date:
-                subset_options_merged.append(years)
-
-            if subset_options_merged:
-                subset_combinations = list(
-                    itertools.product(*subset_options_merged))
-            else:
-                subset_combinations = [()]
-            print("Subset combinations:", subset_combinations)
-
-            async def process_combination(combo_idx: int, combo: tuple):
-
-                FIELD_MAPPING = {
-                    'cities': 'city',
-                    'states': 'state',
-                    'month_start': 'date_month',
-                    'year_start': 'date_year',
-                    'month_end': 'date_month',
-                    'year_end': 'date_year',
-                    'rating_min': 'rating',
-                    'rating_max': 'rating',
-                    'location': 'location'
-                }
-
-                filter_query = {}
-
-                rating_conditions = {}
-                if filters.get('rating_min'):
-                    rating_conditions['$gte'] = filters['rating_min'][0]
-                if filters.get('rating_max'):
-                    rating_conditions['$lte'] = filters['rating_max'][0]
-                if rating_conditions:
-                    filter_query['rating'] = rating_conditions
-
-                def get_unix_time(month, year):
-                    dt = datetime.datetime(year, month, 1, 0, 0, 0)
-                    unix_time = int(dt.timestamp())
-                    return unix_time
-
-                if has_date:
-                    filter_query['date_year'] = {'$eq': combo[-1]}
-
-                else:
-                    date_conditions = {}
-
-                    if filters.get('year_start'):
-                        if filters.get('month_start'):
-                            start_unix = get_unix_time(
-                                filters['month_start'][0],
-                                filters['year_start'][0])
-                        else:
-                            start_unix = get_unix_time(
-                                1, filters['year_start'][0])
-                        date_conditions['$gte'] = start_unix
-
-                    if filters.get('year_end'):
-                        if filters.get('month_end'):
-                            end_unix = get_unix_time(filters['month_end'][0],
-                                                     filters['year_end'][0])
-                        else:
-                            end_unix = get_unix_time(12,
-                                                     filters['year_end'][0])
-                        date_conditions['$lte'] = end_unix
-
-                    if date_conditions:
-                        filter_query['date_unix'] = date_conditions
-
-                    for key in filters:
-                        if key in [
-                                'rating_min', 'rating_max', 'subsets',
-                                'month_start', 'year_start', 'month_end',
-                                'year_end'
-                        ]:
-                            continue
-
-                        values = filters[key]
-                        if not values:
-                            continue
-
-                        if key.lower() == 'themes':
-                            if 'themes' in filters['subsets']:
-                                idx = filters['subsets'].index('themes')
-                                filter_query[combo[idx]] = {'$exists': True}
-
-                            else:
-                                filter_query['$or'] = [{
-                                    theme: {
-                                        '$exists': True
-                                    }
-                                } for theme in filters[key]]
-                        if key in FIELD_MAPPING:
-                            mongo_field = FIELD_MAPPING[key]
-                            if key in filters['subsets']:
-                                idx = filters['subsets'].index(key)
-                                filter_query[mongo_field] = {
-                                    '$eq': combo[idx]
-                                }
-                            else:
-                                filter_query[mongo_field] = {'$in': values}
-
-                print(filter_query)
-
-                results = self.index.query(vector=query_embedding,
-                                           top_k=top_k,
-                                           filter=filter_query,
-                                           include_metadata=True)
-
-                print(
-                    f"Successfully retrieved {len(results['matches'])} results"
-                )
-
-                processed_results = []
-                for match in results.matches:
-                    stored_data = self.db.get_chunk(match.id, index_name)
-                    if stored_data:
-                        processed_results.append({
-                            'text': stored_data['text'],
-                            'metadata': stored_data['metadata'],
-                            'header': match.metadata['header'],
-                            'score': match.score
-                        })
-                subset_info = {}
-                for idx, sub in enumerate(filters['subsets']):
-                    subset_info[sub] = combo[idx]
+            subset_combinations, has_date = utils.vector_funcs.subset_generator(filters)
+            if subdivide_k: # making Top K proportionate to no. of subsets
+                top_k= top_k//len(subset_combinations)
                 
-                return {
-                    'combo_idx': combo_idx,
-                    'subset_info': subset_info,
-                    'processed_results': processed_results
-                }
-
             # Create tasks for parallel processing
             tasks = [
-                process_combination(combo_idx, combo)
+                utils.vector_funcs.process_combination(self, query_embedding, top_k, index_name, filters, combo_idx, combo, has_date)
                 for combo_idx, combo in enumerate(subset_combinations)
             ]
-            
+
             # Execute all tasks concurrently
             results = await asyncio.gather(*tasks)
-            
+
             # Combine results into reviews_dict
             reviews_dict = {
                 result['combo_idx']: {
@@ -341,8 +188,9 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to filter search: {str(e)}")
 
-    async def rerank_results(self, query: str,
-                           results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def rerank_results(
+            self, query: str,
+            results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rerank results using semantic similarity with async batching."""
         try:
             from sentence_transformers import CrossEncoder
@@ -364,12 +212,13 @@ class VectorStore:
             BATCH_SIZE = 20
             MAX_CONCURRENT = 5
             semaphore = asyncio.Semaphore(MAX_CONCURRENT)
-            
+
             async def process_batch(batch_pairs):
                 async with semaphore:
                     loop = asyncio.get_event_loop()
                     with ThreadPoolExecutor() as pool:
-                        return await loop.run_in_executor(pool, model.predict, batch_pairs)
+                        return await loop.run_in_executor(
+                            pool, model.predict, batch_pairs)
 
             # Process batches concurrently
             tasks = []

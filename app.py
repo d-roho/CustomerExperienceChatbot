@@ -15,7 +15,7 @@ from datetime import datetime
 from utils.tools import LuminosoStats
 import nest_asyncio
 nest_asyncio.apply()
-
+import utils.app_funcs 
 
 # Initialize session state
 if 'processed_chunks' not in st.session_state:
@@ -37,38 +37,12 @@ model = st.sidebar.selectbox(
 
 # Initialize components
 @st.cache_resource
-def init_components() -> Tuple[LLMHandler, VectorStore]:
-    """Initialize LLM and Vector Store components with error handling."""
-    try:
-        llm_handler = LLMHandler()
-
-        # Get environment variables with proper error handling
-        api_key: Optional[str] = os.environ.get('PINECONE_API_KEY')
-        environment: Optional[str] = os.environ.get('PINECONE_ENVIRONMENT')
-
-        if not api_key or not environment:
-            st.error(
-                "Missing required Pinecone credentials. Please check your environment variables."
-            )
-            st.stop()
-
-        try:
-            vector_store = VectorStore(api_key=api_key,
-                                       environment=environment,
-                                       index_name='reviews-csv-main')
-            return llm_handler, vector_store
-        except Exception as e:
-            st.error(f"Failed to initialize Pinecone: {str(e)}")
-            st.stop()
-
-    except Exception as e:
-        st.error(f"Failed to initialize components: {str(e)}")
-        st.stop()
-
+def initialize_components():
+    return utils.app_funcs.init_components()
 
 # Initialize components with error handling
 try:
-    llm_handler, vector_store = init_components()
+    llm_handler, vector_store = initialize_components()
 except Exception as e:
     st.error(f"Application initialization failed: {str(e)}")
     st.stop()
@@ -78,8 +52,9 @@ st.sidebar.title("Parameters")
 # chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 # chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
 top_k = st.sidebar.slider("Number of Reviews", 1, 300, 25)
+subdivide_k = st.sidebar.checkbox("Divide K by Number of Subsets", True)
 max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 200)
-use_reranking = st.sidebar.checkbox("Use Reranking", True)
+use_reranking = st.sidebar.checkbox("Use Reranking", False)
 
 # Main interface
 st.title("Review Analysis Pipeline")
@@ -247,13 +222,7 @@ col1, col2 = st.columns(2)
 
 with col2:
     # Cities
-    cities_list = [
-        "Austin", "Bellevue", "Bethesda", "Boston", "Brooklyn",
-        "Chestnut Hill", "Chicago", "Denver", "Houston", "Los Angeles",
-        "Miami", "Montreal", "Nashville", "New York", "North York",
-        "Philadelphia", "San Diego", "Seattle", "Short Hills", "Skokie",
-        "Toronto", "Vancouver", "West Vancouver"
-    ]
+    cities_list = utils.app_funcs.cities_list
     select_all_cities = st.checkbox("Select All Cities",
                                     key="select_all_cities")
     selected_cities = st.multiselect(
@@ -263,10 +232,7 @@ with col2:
         key="cities_select")
 
     # States
-    states_list = [
-        "NY", "CA", "TX", "BC", "MA", "QC", "ON", "IL", "WA", "PA", "MD", "TN",
-        "FL", "NJ", "CO"
-    ]
+    states_list = utils.app_funcs.states_list
     select_all_states = st.checkbox("Select All States",
                                     key="select_all_states")
     selected_states = st.multiselect(
@@ -276,28 +242,7 @@ with col2:
         key="states_select")
 
     # Locations
-    locations_list = [
-        "43 Spring St, New York, NY", "8404 Melrose Ave, Los Angeles, CA",
-        "11700 Domain Blvd Suite 126, Austin, TX",
-        "2166 W 4th Ave, Vancouver, BC, Canada", "126 Newbury St, Boston, MA",
-        "1410 Peel St, Montreal, Quebec, Canada",
-        "3401 Dufferin St, North York, ON, Canada",
-        "940 W Randolph St, Chicago, IL, United States",
-        "888 Westheimer Rd Suite 158, Houston, TX",
-        "4545 La Jolla Village Dr Suite C-12, San Diego, CA",
-        "2621 NE University Village St, Seattle, WA",
-        "107 N 6th St, Brooklyn, NY", "144 5th Ave, New York, NY",
-        "1525 Walnut St, Philadelphia, PA", "7247 Woodmont Ave, Bethesda, MD",
-        "64 Ossington Ave, Toronto, ON, Canada",
-        "2803 12th Ave S, Nashville, TN", "219 NW 25th St, Miami, FL",
-        "925 Main St Unit H3, West Vancouver, BC, Canada",
-        "124 Bellevue Square Unit L124, Bellevue, WA",
-        "1200 Morris Tpke, Short Hills, NJ, United States",
-        "3000 E 1st Ave #144, Denver, CO",
-        "4999 Old Orchard Shopping Ctr Suite B34, Skokie, IL, United States",
-        "737 Dunsmuir St, Vancouver, BC, Canada",
-        "27 Boylston St, Chestnut Hill, MA"
-    ]
+    locations_list = utils.app_funcs.locations_list
     select_all_locations = st.checkbox("Select All Locations",
                                        key="select_all_locations")
     selected_location = st.multiselect(
@@ -307,20 +252,7 @@ with col2:
         key="location_select")
 
     # Themes
-    themes_list = [
-        "Exceptional Customer Service & Support",
-        "Poor Service & Long Wait Times",
-        "Product Durability & Quality Issues",
-        "Aesthetic Design & Visual Appeal",
-        "Professional Piercing Services & Environment",
-        "Store Ambiance & Try-On Experience", "Price & Policy Transparency",
-        "Store Organization & Product Selection",
-        "Complex Returns & Warranty Handling",
-        "Communication & Policy Consistency",
-        "Value & Price-Quality Assessment",
-        "Affordable Luxury & Investment Value", "Online Shopping Experience",
-        "Inventory & Cross-Channel Integration"
-    ]
+    themes_list = utils.app_funcs.themes_list
     select_all_themes = st.checkbox("Select All Themes",
                                     key="select_all_themes")
     selected_themes = st.multiselect(
@@ -423,17 +355,17 @@ if selected_tool == "Luminoso Stats API":
                 st.subheader(f"Drivers | Execution Time: {driver_time:.2f}s"
                              ")")
 
-                for key in drivers.keys():
-                    st.subheader(f"Theme: {key}")
-                    st.dataframe(drivers[key])
+                for key, value in drivers.items():
+                    st.subheader(f"Theme {key}: {value['theme']} | Subset: {value['subset']}")
+                    st.dataframe(value['df'])
 
                 st.subheader(
                     f"Sentiment | Execution Time: {sentiment_time:.2f}s"
                     ")")
-                for key in sentiment.keys():
-                    st.subheader(f"Theme: {key}")
-                    st.dataframe(sentiment[key])
-
+                for key, value in sentiment.items():
+                    st.subheader(f"Theme {key}: {value['theme']}  | Subset: {value['subset']}")
+                    st.dataframe(value['df'])
+    
             except Exception as e:
                 st.error(f"Luminoso Stats Retrieval failed: {str(e)}")
 
@@ -454,7 +386,7 @@ elif selected_tool == "Basic RAG Search":
                 rerank_time = time.time()  #Start timer
                 rerank_execution_time = 0
                 if use_reranking and results:
-                    results = vector_store.rerank_results(query_basic, results)
+                    results = asyncio.run(vector_store.rerank_results(query_basic, results))
                     rerank_execution_time = time.time(
                     ) - rerank_time  #Stop timer
 
@@ -501,7 +433,7 @@ elif selected_tool == "Metadata Filter RAG Search":
                 results = asyncio.run(vector_store.filter_search(filter_params,
                                                           query_filter,
                                                           llm_handler,
-                                                          top_k=top_k,
+                                                          top_k=top_k, subdivide_k=subdivide_k,
                                                           index_name=selected_index))
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
@@ -530,6 +462,9 @@ elif selected_tool == "Metadata Filter RAG Search":
                     response, context = llm_handler.generate_response(
                         query_filter, results, model, max_tokens=max_tokens)
 
+                    for i in range(1):
+                        print(results[1])
+
                     # Display results
                     execution_time = time.time() - start_time  #Stop timer
                     st.subheader(
@@ -550,9 +485,9 @@ elif selected_tool == "Metadata Filter RAG Search":
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
-lite = st.checkbox("Run Lite version (No Themes)", True)
-single_summary = st.checkbox("Generate single summary for Luminoso Stats",
-                             True)
+lite = st.checkbox("Run Lite version (No Themes or Subsets)", False)
+single_summary = st.checkbox("Generate summaries separately for Drivers and Sentiment",
+                             False)
 reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
 
 if st.button("Run Workflow"):
@@ -583,7 +518,8 @@ if st.button("Run Workflow"):
                                   model=model,
                                   reranking=use_reranking,
                                   summaries=single_summary,
-                                  reviews_summary=reviews_summary))
+                                  reviews_summary=reviews_summary,
+                                 subdivide_k=subdivide_k))
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
