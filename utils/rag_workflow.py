@@ -64,11 +64,15 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
         sentiment_task = asyncio.create_task(luminoso_stats.fetch_sentiment(client, filter_to_use))
         
         # Wait for both tasks to complete
-        drivers, sentiment = await asyncio.gather(drivers_task, sentiment_task)
+        drivers_result, sentiment_result = await asyncio.gather(drivers_task, sentiment_task)
+
+        # Extract data dictionaries from results
+        drivers_data, _ = drivers_result  # Tuple of (data_dict, execution_time)
+        sentiment_data, _ = sentiment_result
 
         state["luminoso_results"] = {
-            "drivers": drivers.to_dict(),
-            "sentiment": sentiment.to_dict()
+            "drivers": drivers_data,
+            "sentiment": sentiment_data
         }
 
         
