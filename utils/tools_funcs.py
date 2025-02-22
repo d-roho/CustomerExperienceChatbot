@@ -132,6 +132,8 @@ def sort_and_select_sentiment(df: pd.DataFrame, cols: list, n: int) -> (pd.DataF
 def drivers_processing(result, api_start_time):
   if not isinstance(result, pd.DataFrame):
       df = pd.DataFrame(result)
+  else:
+      df = result
   df = df.drop(columns=[
       'texts', 'exact_term_ids',
       'excluded_term_ids', 'vectors', 'exact_match_count'
