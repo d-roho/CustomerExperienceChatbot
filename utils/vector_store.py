@@ -139,7 +139,7 @@ class VectorStore:
         except Exception as e:
             raise RuntimeError(f"Failed to search: {str(e)}")
 
-    def filter_search(
+    async def filter_search(
         self,
         filters: Dict[str, Any],
         query: str,
@@ -149,20 +149,20 @@ class VectorStore:
     ) -> List[Dict[str, Any]]:
         """Search for similar texts using METADATA FILTERS."""
 
-        try: 
+        try:
             message = 'Removed lower level subsets: '
-            if 'states' in filters['subsets']: # geographic hierarchy (use highest level only)
-                if 'cities' in filters['subsets']: 
+            if 'states' in filters['subsets']:
+                if 'cities' in filters['subsets']:
                     filters['subsets'].remove('cities')
                     message += 'cities, '
                 if 'location' in filters['subsets']:
                     filters['subsets'].remove('location')
                     message += 'location,'
-            if 'cities' in filters['subsets']: 
-                 if 'location' in filters['subsets']:
+            if 'cities' in filters['subsets']:
+                if 'location' in filters['subsets']:
                     filters['subsets'].remove('location')
                     message += 'location,'
-                     
+
             print(f"Filter: {filters} \n {message}")
             reviews_dict = {}
             print(f"Getting embedding for query: {query[:50]}...")
@@ -196,7 +196,8 @@ class VectorStore:
             else:
                 subset_combinations = [()]
             print("Subset combinations:", subset_combinations)
-            for combo_idx, combo in enumerate(subset_combinations):
+
+            async def process_combination(combo_idx: int, combo: tuple):
 
                 FIELD_MAPPING = {
                     'cities': 'city',
@@ -302,23 +303,38 @@ class VectorStore:
                     stored_data = self.db.get_chunk(match.id, index_name)
                     if stored_data:
                         processed_results.append({
-                            'text':
-                            stored_data['text'],
-                            'metadata':
-                            stored_data['metadata'],
-                            'header':
-                            match.metadata['header'],
-                            'score':
-                            match.score
+                            'text': stored_data['text'],
+                            'metadata': stored_data['metadata'],
+                            'header': match.metadata['header'],
+                            'score': match.score
                         })
                 subset_info = {}
                 for idx, sub in enumerate(filters['subsets']):
                     subset_info[sub] = combo[idx]
-                reviews_dict[combo_idx] = {
+                
+                return {
+                    'combo_idx': combo_idx,
                     'subset_info': subset_info,
                     'processed_results': processed_results
                 }
-                print(f"Subset {combo_idx+1} complete")
+
+            # Create tasks for parallel processing
+            tasks = [
+                process_combination(combo_idx, combo)
+                for combo_idx, combo in enumerate(subset_combinations)
+            ]
+            
+            # Execute all tasks concurrently
+            results = await asyncio.gather(*tasks)
+            
+            # Combine results into reviews_dict
+            reviews_dict = {
+                result['combo_idx']: {
+                    'subset_info': result['subset_info'],
+                    'processed_results': result['processed_results']
+                }
+                for result in results
+            }
 
             return reviews_dict
 
