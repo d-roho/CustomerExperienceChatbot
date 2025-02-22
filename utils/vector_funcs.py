@@ -24,10 +24,10 @@ def hierarchy_upholder(filters):
 
 
 def subset_generator(filters):
-  year_start = filters.get('year_start', [2019])[0]
-  year_end = filters.get('year_end', [2025])[0]
-  year_range = year_end - year_start + 1
-  years = [year_start + i for i in range(year_range)]
+  year_start = filters.get('year_start', [[2019]])[0] if filters.get('year_start') else [2019]
+  year_end = filters.get('year_end', [[2025]])[0] if filters.get('year_end') else [2025]
+  year_range = year_end[0] - year_start[0] + 1
+  years = [year_start[0] + i for i in range(year_range)]
   filters['years'] = years
 
   subset_options_merged = []
