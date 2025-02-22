@@ -498,11 +498,11 @@ elif selected_tool == "Metadata Filter RAG Search":
         with st.spinner("Searching..."):
             try:
                 start_time = time.time()  #Start timer
-                results = await vector_store.filter_search(filter_params,
+                results = asyncio.run(vector_store.filter_search(filter_params,
                                                           query_filter,
                                                           llm_handler,
                                                           top_k=top_k,
-                                                          index_name=selected_index)
+                                                          index_name=selected_index))
                 pinecone_execution_time = time.time() - start_time  #Stop timer
 
                 # Rerank if enabled
