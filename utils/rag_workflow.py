@@ -60,6 +60,12 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
             # remove themes for quicker processing
             filter_to_use['subsets'] = []
 
+        # TODO - add support for subsetting by ratings. Removing for now.
+        if 'ratings_min' in filter_to_use['subsets']:
+            filter_to_use['subsets'].remove('ratings_min')
+        if 'ratings_max' in filter_to_use['subsets']:
+            filter_to_use['subsets'].remove('ratings_max')
+
 
         # Run API calls concurrently
         drivers_task = asyncio.create_task(luminoso_stats.fetch_drivers(client, filter_to_use))
