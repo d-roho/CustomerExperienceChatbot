@@ -208,7 +208,9 @@ async def get_vector_results(state: State,
 
 async def generate_final_response(state: State,
                                   llm_handler: LLMHandler,
-                                  summaries: int = 0, reviews_summary: int = 0) -> State:
+                                  summaries: int = 0, 
+                                  reviews_summary: int = 0,
+                                  concise_mode: bool = False) -> State:
     """Generate final response combining all results."""
     try:         
         final_response_start = time.time()
@@ -237,7 +239,7 @@ async def generate_final_response(state: State,
             max_tokens=state.get('max_tokens',
                                  2000),  # Updated to use max_tokens from state
             temperature=0,
-            system=utils.rag_workflow_funcs.final_answer_prompt,
+            system=utils.rag_workflow_funcs.final_answer_prompt_concise if concise_mode else utils.rag_workflow_funcs.final_answer_prompt,
             messages=[{
                 "role":
                 "user",
@@ -268,7 +270,10 @@ async def process_query(query: str,
                         max_tokens: int = 2000,
                         model: str = "claude-3-5-sonnet-20241022",
                         reranking: int = 1,
-                        summaries: int = 0, reviews_summary: int = 0, subdivide_k:bool = False) -> Dict:
+                        summaries: int = 0, 
+                        reviews_summary: int = 0, 
+                        subdivide_k:bool = False,
+                        concise_mode:bool = False) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -348,7 +353,10 @@ async def process_query_lite(query: str,
     max_tokens: int = 2000,
     model: str = "claude-3-5-sonnet-20241022",
     reranking: int = 0,
-    summaries: int = 0, reviews_summary: int = 0, subdivide_k:bool = False) -> Dict:
+    summaries: int = 0, 
+    reviews_summary: int = 0, 
+    subdivide_k:bool = False,
+    concise_mode:bool = False) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time

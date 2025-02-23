@@ -55,6 +55,7 @@ top_k = st.sidebar.slider("Number of Reviews", 1, 300, 200)
 subdivide_k = st.sidebar.checkbox("Divide K by Number of Subsets", True)
 max_tokens = st.sidebar.slider("Max Final Response Length (tokens)", 100, 4000, 2000)
 use_reranking = st.sidebar.checkbox("Use Reranking", False)
+concise_mode = st.sidebar.checkbox("Concise Answer Mode", False) # Added Concise Answer Mode checkbox
 
 # Main interface
 st.title("Review Analysis Pipeline")
@@ -365,7 +366,7 @@ if selected_tool == "Luminoso Stats API":
                 for key, value in sentiment.items():
                     st.subheader(f"Theme {key}: {value['theme']}  | Subset: {value['subset']}")
                     st.dataframe(value['df'])
-    
+
             except Exception as e:
                 st.error(f"Luminoso Stats Retrieval failed: {str(e)}")
 
@@ -507,6 +508,7 @@ if st.button("Run Workflow"):
                                        reranking=use_reranking,
                                        summaries=sep_summary,
                                        reviews_summary=reviews_summary,
+                                       concise_mode=concise_mode, #added concise_mode
                                       subdivide_k=subdivide_k))
                 lite_execution = 1
             else:
@@ -520,6 +522,7 @@ if st.button("Run Workflow"):
                                   reranking=use_reranking,
                                   summaries=sep_summary,
                                   reviews_summary=reviews_summary,
+                                  concise_mode=concise_mode, #added concise_mode
                                  subdivide_k=subdivide_k))
                 lite_execution = 0
 
@@ -550,13 +553,13 @@ if st.button("Run Workflow"):
 
                             elif sub.get('minimum'):
                                 headers.append(f"{sub['name']}: {sub['minimum']} to {sub['maximum']}")
-                                               
+
                             else:
                                 headers.append(f"{sub['name']}: {sub.get('values')}")
                             header_final = " | ".join(headers)
                         except:
                             header_final = "Failed to retrieve header" 
-                               
+
                     st.subheader(f"{header_final}")
                     st.dataframe(value['df'])
                 if sep_summary == 1:
