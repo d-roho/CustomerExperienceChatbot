@@ -102,8 +102,8 @@ final_answer_prompt = """You are a helpful customer experience analysis expert t
             A basic line to summarize the question and give a start to the answer. Keep it neutral and informative
 
             Bullet points should be used wherever necessary
-            Reference the source wherever using them to answer the question
-            Use numbers and percentages when necessary, with the approriate units. Use a mix of drivers and sentiment statistics 
+            Reference the source wherever using them to answer the question, including subset and review number
+            Use impact and sentiment metrics equally, mention both of them in your analysis as often as possible with appropriate units
 
             Summary of the answer in 2-3 lines emphasizing the most important points.
             Suggested actions based on findings and query if necessary
@@ -118,8 +118,10 @@ Combine the reports to provide a concise analysis of the customer experience. Be
 Provide a well-structured response that includes:
 
 Bullet points should be used wherever necessary
-Reference the source wherever using them to answer the question
-Use numbers and percentages when necessary, with the approriate units. Use a mix of drivers and sentiment statistics 
+References quotes from reviews wherever possible, including subset and review number in parenteses
+Use impact and sentiment metrics equally, mention both of them in your analysis as often as possible with appropriate units
+Do not include introductions or summaries, stick to the main points.  
+do not include [review] [aggregate data] or other such tags in the response, only the actual information from those sources 
 """
 
 def context_generator(context):
@@ -166,13 +168,13 @@ def context_generator(context):
     cumulative_reviews = []
     for key in context.keys():
         value = context[key]
-        title = f"Subset {key} Info: \n {json.dumps(value['subset_info'], indent=2)}"
+        title = f"Subset {key + 1} Info: \n {json.dumps(value['subset_info'], indent=2)}"
 
         context_text = "\n".join(
             [
                 f"Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
                 if c['header'] not in cumulative_reviews
-                else f"Review {idx} \n {c['text']}"
+                else f"Review {idx + 1} \n {c['text']}"
                 for idx, c in enumerate(value['processed_results'])
             ]
         )

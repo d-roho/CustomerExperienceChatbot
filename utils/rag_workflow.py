@@ -219,7 +219,7 @@ async def generate_final_response(state: State,
             context_text = state['reviews_summary']
             
         else:
-            context_text = context_generator(state['vector_results'])
+            context_text = utils.rag_workflow_funcs.context_generator(state['vector_results'])
         
         stats_summary = f"""
         Drivers Data Analysis:
@@ -247,9 +247,12 @@ async def generate_final_response(state: State,
                 f"""
                 User Query: {state['query']}
 
+                Aggregate Data Analysis Reports
+                
                 {stats_summary}
 
-                Reviews:
+                Reviews Analysis Reports:
+                
                 {context_text}
                 """
             }])
@@ -333,7 +336,7 @@ async def process_query(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary)
+        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary, concise_mode=concise_mode)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 
@@ -414,7 +417,7 @@ async def process_query_lite(query: str,
 
         # Step 4: Generate final response
         final_response_start = time.time()
-        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary)
+        state = await generate_final_response(state, llm_handler, summaries=summaries, reviews_summary=reviews_summary, concise_mode=concise_mode)
         state["execution_times"]["final_response_generation"] = time.time(
         ) - final_response_start
 

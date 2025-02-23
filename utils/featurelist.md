@@ -1,7 +1,7 @@
 Practicality - Customer Requirements!!!, Speed & Consistency!!!
 
--  testing
--  tuning reviews summary, include references | New Prompt (Combine the two, dont make up anything), emphasis on comparing and constrasting
+-  tuning  n testing
+-  emphasis on comparing and constrasting
 -  Slides
 
 

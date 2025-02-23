@@ -55,7 +55,6 @@ top_k = st.sidebar.slider("Number of Reviews", 1, 300, 200)
 subdivide_k = st.sidebar.checkbox("Divide K by Number of Subsets", True)
 max_tokens = st.sidebar.slider("Max Final Response Length (tokens)", 100, 4000, 2000)
 use_reranking = st.sidebar.checkbox("Use Reranking", False)
-concise_mode = st.sidebar.checkbox("Concise Answer Mode", False) # Added Concise Answer Mode checkbox
 
 # Main interface
 st.title("Review Analysis Pipeline")
@@ -490,6 +489,8 @@ lite = st.checkbox("Run Lite version (No Themes or Subsets)", False)
 sep_summary = st.checkbox("Generate summaries separately for Drivers and Sentiment",
                              False)
 reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
+concise_mode = st.checkbox("Concise Answer Mode", False) # Added Concise Answer Mode checkbox
+
 
 if st.button("Run Workflow"):
     st.session_state.last_query = query
