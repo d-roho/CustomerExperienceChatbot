@@ -51,9 +51,9 @@ except Exception as e:
 st.sidebar.title("Parameters")
 # chunk_size = st.sidebar.slider("Chunk Size", 100, 1000, 500, 50)
 # chunk_overlap = st.sidebar.slider("Chunk Overlap", 0, 200, 50, 10)
-top_k = st.sidebar.slider("Number of Reviews", 1, 300, 25)
+top_k = st.sidebar.slider("Number of Reviews", 1, 300, 200)
 subdivide_k = st.sidebar.checkbox("Divide K by Number of Subsets", True)
-max_tokens = st.sidebar.slider("Max Response Length (tokens)", 100, 4000, 200)
+max_tokens = st.sidebar.slider("Max Final Response Length (tokens)", 100, 4000, 2000)
 use_reranking = st.sidebar.checkbox("Use Reranking", False)
 
 # Main interface
@@ -486,7 +486,7 @@ elif selected_tool == "Metadata Filter RAG Search":
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
 lite = st.checkbox("Run Lite version (No Themes or Subsets)", False)
-single_summary = st.checkbox("Generate summaries separately for Drivers and Sentiment",
+sep_summary = st.checkbox("Generate summaries separately for Drivers and Sentiment",
                              False)
 reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
 
@@ -505,8 +505,9 @@ if st.button("Run Workflow"):
                                        max_tokens=max_tokens,
                                        model=model,
                                        reranking=use_reranking,
-                                       summaries=single_summary,
-                                       reviews_summary=reviews_summary))
+                                       summaries=sep_summary,
+                                       reviews_summary=reviews_summary,
+                                      subdivide_k=subdivide_k))
                 lite_execution = 1
             else:
                 response = asyncio.run(
@@ -517,15 +518,16 @@ if st.button("Run Workflow"):
                                   max_tokens=max_tokens,
                                   model=model,
                                   reranking=use_reranking,
-                                  summaries=single_summary,
+                                  summaries=sep_summary,
                                   reviews_summary=reviews_summary,
                                  subdivide_k=subdivide_k))
+                lite_execution = 0
 
             st.subheader("Analysis Results")
             st.markdown(response['final_response'])
             with st.expander("Explore Workflow"):
                 st.subheader(
-                    f"Execution Times (Lite: {lite_execution == 1} | Single Summary: {single_summary})"
+                    f"Execution Times (Lite Version: {lite_execution == 1} | Single Stats Summary: {sep_summary == 0})"
                 )
                 for step, duration in response['execution_times'].items():
                     st.metric(f"{step.replace('_', ' ').title()}",
@@ -533,37 +535,82 @@ if st.button("Run Workflow"):
 
                 st.subheader(f"Query: \n {response['query']}")
                 st.subheader(f"Generated Filter: \n")
-                st.json(response['filters'], expanded=True)
-                if single_summary == 0:
-                    st.subheader(f"Drivers Data \n")
-                    st.dataframe(response['luminoso_results']['drivers'])
+                st.json(response['original_filters'], expanded=True)
+                st.subheader(f"Drivers Data \n")
+                for key, value in response['luminoso_results']['drivers'].items():
+                    headers = [f"Themes: {value['theme']}"]
+                    for sub in value['subset']:
+                        try:
+                            if sub == 'Overall Rating':
+                                headers.append(f"Rating: {sub['minimum']}-{sub['maximum']} stars")
+                            elif sub == 'Date Created':
+                                start = datetime.fromtimestamp({sub['minimum']})
+                                end = datetime.fromtimestamp({sub['maximum']})
+                                headers.append(f"Date Rage: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
+
+                            elif sub.get('minimum'):
+                                headers.append(f"{sub['name']}: {sub['minimum']} to {sub['maximum']}")
+                                               
+                            else:
+                                headers.append(f"{sub['name']}: {sub.get('values')}")
+                            header_final = " | ".join(headers)
+                        except:
+                            header_final = "Failed to retrieve header" 
+                               
+                    st.subheader(f"{header_final}")
+                    st.dataframe(value['df'])
+                if sep_summary == 1:
                     st.subheader(f"Drivers Summary \n")
                     st.markdown(response['driver_summary'])
-                    st.subheader(f"Sentiment Data \n")
-                    st.dataframe(response['luminoso_results']['sentiment'])
+                st.subheader(f"Sentiment Data \n")
+                for key, value in response['luminoso_results']['sentiment'].items():
+                    headers = [f"Themes: {value['theme']}"]
+                    for sub in value['subset']:
+                        try:
+                            if sub == 'Overall Rating':
+                                headers.append(f"Rating: {sub['minimum']}-{sub['maximum']} stars")
+                            elif sub == 'Date Created':
+                                start = datetime.fromtimestamp({sub['minimum']})
+                                end = datetime.fromtimestamp({sub['maximum']})
+                                headers.append(f"Date Rage: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
+
+                            elif sub.get('minimum'):
+                                headers.append(f"{sub['name']}: {sub['minimum']} to {sub['maximum']}")
+
+                            else:
+                                headers.append(f"{sub['name']}: {sub.get('values')}")
+                            header_final = " | ".join(headers)
+                        except:
+                            header_final = "Failed to retrieve header" 
+
+                    st.subheader(f"{header_final}")
+                    st.dataframe(value['df'])
+                if sep_summary == 1:
                     st.subheader(f"Sentiment Summary \n")
                     st.markdown(response['sentiment_summary'])
-
-                else:
-                    st.subheader(f"Drivers Data \n")
-                    st.dataframe(response['luminoso_results']['drivers'])
-                    st.subheader(f"Sentiment Data \n")
-                    st.dataframe(response['luminoso_results']['sentiment'])
-                    st.subheader(f"Stats Summary \n")
+                if sep_summary == 0:
+                    st.subheader(f"Combined Luminoso Stats Summary \n")
                     st.markdown(response['driver_summary'])
+
+
+            # reviews
+            try:
+                rev_count = [len(revset['processed_results']) for _, revset in response['vector_results'].items()]
+            except:
+                rev_count = [0, 0]
+            with st.expander(
+                    f"{sum(rev_count)} Reviews Retrieved across {len(response['vector_results'])} Subsets"):
+                st.subheader(f"Query:{response['query']} \n______________________________________________")
                 if reviews_summary == 1:
                     st.subheader("Reviews Summary")
-                    st.markdown(response['reviews_summary'])
-            with st.expander(
-                    f"{len(response['vector_results'])} Reviews Retrieved"):
-                st.subheader(f"Total Reviews : \n Query:{response['query']}")
-                for i, curr_rev in enumerate(response['vector_results'][:50]):
-                    st.markdown(
-                        f"Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n Metadata: {curr_rev['header']} \n\n {curr_rev['text']}"
-                    )
-            execution_time = time.time() - start_time  #Stop timer
-            st.success(f'Done (Execution time: {execution_time:.2f}s)')
-
+                    st.markdown(response['reviews_summary'] + '\n______________________________________________')
+                for key, revset in response['vector_results'].items():
+                    st.subheader(
+                    f"Subset {key+1} Info - {revset['subset_info']} | Total Reviews: {len(revset['processed_results'])}")
+                    for i, curr_rev in enumerate(revset['processed_results'][:50]):
+                        st.markdown(
+                            f"Review {i+1} | Retriever/Reranker Score: {curr_rev['score']} \n\n Metadata: {curr_rev['header']} \n\n {curr_rev['text']} \n______________________________________________"
+                            )
         except Exception as e:
             st.error(f"Analysis failed: {str(e)}")
 # Footer

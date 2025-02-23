@@ -1,5 +1,10 @@
 Practicality - Customer Requirements!!!, Speed & Consistency!!!
 
+-  testing
+-  tuning reviews summary, include references | New Prompt (Combine the two, dont make up anything), emphasis on comparing and constrasting
+-  Slides
+
+
 Parralellization 
 - Fix: 
 - Optimize: Generate Theme (Add timing, parallelization) |  Sentiment Stats | Reranking 

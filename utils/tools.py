@@ -86,9 +86,9 @@ class LuminosoStats:
                             df = utils.tools_funcs.drivers_processing(
                                 results[idx], api_start_time)
                             drivers_dict[str(uuid.uuid4())] = {
-                                'df': df.to_dict(),
                                 'subset': copy.deepcopy(filters),
-                                'theme': theme
+                                'theme': theme,
+                                'df': df.to_dict()
                             }
 
                 else:
@@ -105,11 +105,11 @@ class LuminosoStats:
                         print(results[idx])
                         df = utils.tools_funcs.drivers_processing(
                             results[idx], api_start_time)
-                        drivers_dict[str(uuid.uuid4())] = {
-                            'df': df.to_dict(),
-                            'subset': copy.deepcopy(filters),
-                            'theme': theme
-                        }
+                    drivers_dict[str(uuid.uuid4())] = {
+                        'subset': copy.deepcopy(filters),
+                        'theme': theme,
+                        'df': df.to_dict()
+                    }
 
             else:
                 if subset_combinations:
@@ -128,10 +128,11 @@ class LuminosoStats:
                     df = utils.tools_funcs.drivers_processing(
                         df, api_start_time)
                     drivers_dict[str(uuid.uuid4())] = {
-                        'df': df.to_dict(),
                         'subset': copy.deepcopy(filters),
-                        'theme': 'All'
+                        'theme': 'All',
+                        'df': df.to_dict()
                     }
+
                     print(df)
             total_time = time.time() - start_time
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
@@ -183,9 +184,9 @@ class LuminosoStats:
                                 results[idx], api_start_time)
 
                             sentiments_dict[str(uuid.uuid4())] = {
-                                'df': df.to_dict(),
                                 'theme': theme,
-                                'subset': copy.deepcopy(filters)
+                                'subset': copy.deepcopy(filters),
+                                'df': df.to_dict()
                             }
                 else:
                     # Create tasks for all themes
@@ -202,12 +203,11 @@ class LuminosoStats:
                         df = utils.tools_funcs.sentiments_processing(
                             results[idx], api_start_time)
 
-                        sentiments_dict[str(uuid.uuid4())] = {
-                            'df': df.to_dict(),
-                            'theme': theme,
-                            'subset': copy.deepcopy(filters)
-                        }
-
+                    sentiments_dict[str(uuid.uuid4())] = {
+                        'theme': theme,
+                        'subset': copy.deepcopy(filters),
+                        'df': df.to_dict()
+                    }
             else:
                 if subset_combinations:
                     print('SUBSETTING')
@@ -239,10 +239,10 @@ class LuminosoStats:
                         df = pd.DataFrame(rows)
                         print(df)
                         sentiments_dict[str(uuid.uuid4())] = {
-                            'df': df.to_dict(),
                             'theme': 'All',
-                            'subset': copy.deepcopy(filters)
-                        }
+                            'subset': copy.deepcopy(filters),
+                            'df': df.to_dict()
+                        }                
                 else:
                     result = await asyncio.to_thread(lambda: client.get(
                         '/concepts/sentiment/',
@@ -268,11 +268,10 @@ class LuminosoStats:
                     df = pd.DataFrame(rows)
                     print(df)
                     sentiments_dict[str(uuid.uuid4())] = {
-                        'df': df.to_dict(),
                         'theme': 'All',
-                        'subset': copy.deepcopy(filters)
+                        'subset': copy.deepcopy(filters),
+                        'df': df.to_dict()
                     }
-
             total_time = time.time() - start_time
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
             return sentiments_dict, total_time

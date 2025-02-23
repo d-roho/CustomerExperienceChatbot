@@ -21,6 +21,7 @@ class State(TypedDict):
     model: str
     execution_times: Dict[str, float]
     reviews_summary: int
+    original_filters: Dict[str, Any]
 
 
 async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
@@ -37,6 +38,7 @@ async def generate_filters(state: State, llm_handler: LLMHandler) -> State:
             }])
         print(response.content[0].text)
         state["filters"] = json.loads(response.content[0].text)
+        state['original_filters'] = json.loads(response.content[0].text)
         return state
     except Exception as e:
         raise RuntimeError(f"Filter generation failed: {str(e)}")
@@ -67,15 +69,18 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
         drivers_result, sentiment_result = await asyncio.gather(drivers_task, sentiment_task)
 
         # Extract data dictionaries from results
-        drivers_data, _ = drivers_result  # Tuple of (data_dict, execution_time)
-        sentiment_data, _ = sentiment_result
+        drivers_data, dri_exc = drivers_result  # Tuple of (data_dict, execution_time)
+        sentiment_data, sent_exc = sentiment_result
 
         state["luminoso_results"] = {
             "drivers": drivers_data,
             "sentiment": sentiment_data
         }
+        state["execution_times"]['driver_stats'] = dri_exc
+        state["execution_times"]['sentiment_stats'] = sent_exc
 
-        
+
+        stats_summary_start = time.time()        
         if summaries == 1:
             
             response = llm_handler.anthropic.messages.create(
@@ -107,6 +112,16 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
             print(response.content[0].text)
             state["sentiment_summary"] = response.content[0].text
         else:
+
+            organized_data = ['The following is data organized by subsets to be used in your analysis. Each subset has data on Drivers and Sentiment for relating only to that subset.']
+            driver_keys = state['luminoso_results']['drivers'].keys()
+            sentiment_keys = state['luminoso_results']['sentiment'].keys() 
+
+            data_key_tuples = list(zip(driver_keys, sentiment_keys))
+            for key in data_key_tuples:
+                organized_data.append(f"Subset Metadata: \n Theme: {state['luminoso_results']['drivers'][key[0]]['theme']} \n {state['luminoso_results']['drivers'][key[0]]['subset']}\n\n DRIVERS DATA \n\n {json.dumps(state['luminoso_results']['drivers'][key[0]], indent=2)} \n\n SENTIMENT DATA \n\n {json.dumps(state['luminoso_results']['sentiment'][key[1]], indent=2)} \n\n END OF SUBSET")
+
+            stats_context = '\n\n'.join(organized_data)
             response = llm_handler.anthropic.messages.create(
                 model='claude-3-5-sonnet-20241022',
                 max_tokens=2000,
@@ -116,12 +131,14 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
                     "role":
                     "user",
                     "content":
-                    f"User Query: {state['query']} \n Drivers Dataset\n {json.dumps(state['luminoso_results']['drivers'], indent=2)} \n Sentiment Dataset\n {json.dumps(state['luminoso_results']['sentiment'], indent=2)}"
+                    f"User Query: {state['query']} \n\n {stats_context}"
                 }])
 
             state["driver_summary"] = response.content[0].text
 
-        state["execution_times"]["luminoso_stats"] = time.time(
+        
+        state["execution_times"]["luminoso_stats_summary"]  = time.time() - stats_summary_start
+        state["execution_times"]["luminoso_stats_total"] = time.time(
         ) - luminoso_start
         return state
     except Exception as e:
@@ -132,12 +149,16 @@ async def get_vector_results(state: State,
                              vector_store: VectorStore,
                              llm_handler: LLMHandler,
                              top_k: int,
-                             reranking: int = 0, subdivide_k: bool = True, reviews_summary: bool = True) -> State:
+                             reranking: int = 0, subdivide_k: bool = True, reviews_summary: bool = True, subsets: bool = True) -> State:
     """Get relevant reviews from vector store based on filters."""
     try:
         vector_start = time.time()
+        filter_to_use = state["filters"]
+        if subsets == 0:
+            # remove themes for quicker processing
+            filter_to_use['subsets'] = []
         results = asyncio.run(vector_store.filter_search(
-            state["filters"],
+            filter_to_use,
             state['query'],
             llm_handler,
             top_k=top_k,
@@ -160,7 +181,7 @@ async def get_vector_results(state: State,
                 state['vector_results'])
             response = llm_handler.anthropic.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=8000,
+                max_tokens=2000,
                 temperature=0,
                 system=utils.rag_workflow_funcs.reviews_summary_prompt,
                 messages=[{
@@ -178,6 +199,7 @@ async def get_vector_results(state: State,
             state["reviews_summary"] = response.content[0].text
             reviews_summary_time = time.time() - rev_sum_start
             state["execution_times"]["reviews_summary_generation"] = reviews_summary_time
+            state["execution_times"]["reviews_total"] = state["execution_times"]["vector_search"] +state["execution_times"]["reviews_summary_generation"] 
             
         return state
     except Exception as e:
@@ -242,7 +264,7 @@ async def generate_final_response(state: State,
 async def process_query(query: str,
                         llm_handler: LLMHandler,
                         vector_store: VectorStore,
-                        top_k: int = 300,
+                        top_k: int = 200,
                         max_tokens: int = 2000,
                         model: str = "claude-3-5-sonnet-20241022",
                         reranking: int = 1,
@@ -263,7 +285,8 @@ async def process_query(query: str,
                       max_tokens=max_tokens,
                       model=model,
                       reviews_summary="",
-                      execution_times={})
+                      execution_times={},
+                     original_filters={})
 
         # Step 1: Generate filters
         filter_start = time.time()
@@ -279,7 +302,8 @@ async def process_query(query: str,
                                vector_store,
                                llm_handler,
                                top_k=top_k,
-                               reranking=reranking, subdivide_k=subdivide_k, reviews_summary=reviews_summary))
+                               reranking=reranking, subdivide_k=subdivide_k, 
+                               reviews_summary=reviews_summary))
 
         # Start timing parallel tasks
         parallel_start = time.time()
@@ -318,15 +342,13 @@ async def process_query(query: str,
 
 
 async def process_query_lite(query: str,
-                             llm_handler: LLMHandler,
-                             vector_store: VectorStore,
-                             top_k: int = 300,
-                             max_tokens: int = 2000,
-                             model: str = "claude-3-5-sonnet-20241022",
-                             themes: int = 0,
-                             summaries: int = 0,
-                             reranking: int = 1,
-                             reviews_summary: int = 0) -> Dict:
+    llm_handler: LLMHandler,
+    vector_store: VectorStore,
+    top_k: int = 200,
+    max_tokens: int = 2000,
+    model: str = "claude-3-5-sonnet-20241022",
+    reranking: int = 0,
+    summaries: int = 0, reviews_summary: int = 0, subdivide_k:bool = False) -> Dict:
     """Process a query through the workflow and return the final response."""
     try:
         import time
@@ -342,8 +364,9 @@ async def process_query_lite(query: str,
                       sentiment_summary="",
                       max_tokens=max_tokens,
                       model=model,
-                      reviews_summary=reviews_summary,
-                      execution_times={})
+                      reviews_summary="",
+                      execution_times={},
+                     original_filters={})
 
         # Step 1: Generate filters
         filter_start = time.time()
@@ -354,15 +377,17 @@ async def process_query_lite(query: str,
         # Steps 2 & 3: Parallel execution of Luminoso stats and vector search
         luminoso_task = asyncio.create_task(
             get_luminoso_stats(state,
-                               llm_handler,
-                               themes=themes,
+                               llm_handler, themes=False,
+                               subsets=False,
                                summaries=summaries))
         vector_task = asyncio.create_task(
-            get_vector_results(state,
-                               vector_store,
-                               llm_handler,
-                               top_k=top_k,
-                               reranking=reranking))
+        get_vector_results(state,
+               vector_store,
+               llm_handler,
+               top_k=top_k,
+               reranking=reranking, subdivide_k=subdivide_k, 
+               reviews_summary=reviews_summary, subsets= False))
+
 
         # Start timing parallel tasks
         parallel_start = time.time()

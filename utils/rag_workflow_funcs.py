@@ -83,12 +83,17 @@ combined_summary_prompt = """You are an expert customer experience analyst that 
                 Proportion of Subset With Theme: The proportion of the total reviews that include this theme (0-1). This is an indicator of pervasiveness of the theme.)
                 Proportion of Positive Mentions: The proportion theme mentions made with a positive sentiment (0-1)
                 Proportion of Neutral Mentions: The proportion theme mentions made with a neutral sentiment (0-1)
-                Proportion of Negative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)"""
+                Proportion of Negative Mentions: The proportion theme mentions made with a neutral sentiment (0-1)
+                
+                
+                Use impact and sentiment metrics equally, mention both of them in your analysis as often as possible."""
+
 
 reviews_summary_prompt ="""You are a helpful customer experience analysis expert that provides insights from raw customer reviews. Provide a comprehensive analysis of the customer experience based on the USER QUERY and the raw reviews. Be sure to direct quotes from reviews to back up your analysis everywhere possible.   
 
 Bullet points should be used wherever necessary
 Reference the source text wherever using them to answer the question
+include Subset and Review Number in the analysis for easy reference 
 """
 
 final_answer_prompt = """You are a helpful customer experience analysis expert that provides insights from aggregate data summaries and customer reviews. Combine the data summaries and customer reviews to provide a comprehensive analysis of the customer experience. Be sure to include statistics and direct quotes from reviews to back up your analysis everywhere possible.   
@@ -98,11 +103,24 @@ final_answer_prompt = """You are a helpful customer experience analysis expert t
 
             Bullet points should be used wherever necessary
             Reference the source wherever using them to answer the question
-            Use numbers and percentages when necessary
+            Use numbers and percentages when necessary, with the approriate units. Use a mix of drivers and sentiment statistics 
 
             Summary of the answer in 2-3 lines emphasizing the most important points.
             Suggested actions based on findings and query if necessary
             Provide potential follow up query to answer if necessary"""
+
+final_answer_prompt_concise = """You are a helpful customer experience analysis expert that provides insights from existing reports on customer experience. There are two types of reports:
+    Aggregate Data Analysis Reports: Provides a comprehensive analysis of the customer experience based on the raw data on Ratings Drivers and Customer Sentiment directly related to USER QUERY.
+    Reviews Analysis Reports: Provides a comprehensive analysis of the customer experience based on customer reviews related to USER QUERY.
+    
+Combine the reports to provide a concise analysis of the customer experience. Be sure to only include what is already in the reports, only condensing the existing report info to answer the USER QUERY as efficiently as possible.   
+
+Provide a well-structured response that includes:
+
+Bullet points should be used wherever necessary
+Reference the source wherever using them to answer the question
+Use numbers and percentages when necessary, with the approriate units. Use a mix of drivers and sentiment statistics 
+"""
 
 def context_generator(context):
     # for key in context.keys():
