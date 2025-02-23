@@ -237,24 +237,29 @@ def sentiments_processing(result, api_start_time):
   return final_df
 
 async def fetch_driver(theme, filters, filters_exist, client):
-    if theme:
-        concept = {"type": "concept_list", 'name': theme}
-        result = await asyncio.to_thread(
-            client.get,
-            '/concepts/score_drivers/',
-            score_field="Overall Rating",
-            concept_selector=concept,
-            filter=filters if filters_exist == 1 else None
-        )
-    else:
-        result = await asyncio.to_thread(
-            client.get,
-            '/concepts/score_drivers/',
-            score_field="Overall Rating",
-            filter=filters if filters_exist == 1 else None,
-            limit=None if theme else 50
-        )
-    return result
+    try:
+        if theme:
+            concept = {"type": "concept_list", 'name': theme}
+            result = await asyncio.to_thread(
+                client.get,
+                '/concepts/score_drivers/',
+                score_field="Overall Rating",
+                concept_selector=concept,
+                filter=filters if filters_exist == 1 else None
+            )
+        else:
+            result = await asyncio.to_thread(
+                lambda: client.get(
+                    '/concepts/score_drivers/',
+                    score_field="Overall Rating",
+                    filter=filters if filters_exist == 1 else None,
+                    limit=None if theme else 50
+                )
+            )
+        return result
+    except Exception as e:
+        print(f"Error in fetch_driver: {str(e)}")
+        raise
 
 async def process_combinations(subset_combinations, filter, filters, filters_exist, client, api_start_time):
     drivers_dict = {}
