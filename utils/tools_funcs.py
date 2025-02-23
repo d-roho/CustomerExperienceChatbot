@@ -51,7 +51,8 @@ def filtering(filter):
             filters_exist = 1
         if key == 'cities':
             if filter[key]:
-                dict = {"name": 'City', "values": filter[key]}
+                # Ensure city values are strings
+                dict = {"name": 'City', "values": [str(city) for city in filter[key]]}
                 filters.append(dict)
                 filters_exist = 1
         
