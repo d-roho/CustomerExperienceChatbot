@@ -51,13 +51,9 @@ class LuminosoStats:
             else:
                 subset_filter = filter
             # TODO - add support for subsetting by ratings. Removing for now.
-            if 'ratings_min' in subset_filter['subsets']:
-                subset_filter['subsets'] = subset_filter['subsets'].remove('ratings_min')
-            if 'ratings_max' in subset_filter['subsets']:
-                subset_filter['subsets'] = subset_filter['subsets'].remove('ratings_max')
-
+            subset_filter['subsets'] = list(filter(lambda x: x not in ('ratings_min', 'ratings_max'), subset_filter['subsets']))
+            
             subset_combinations, _ = subset_generator(subset_filter)
-
             filters, filters_exist, drivers_exist, themes = utils.tools_funcs.filtering(
                 filter)
 
