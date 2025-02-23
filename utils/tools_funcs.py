@@ -51,10 +51,12 @@ def filtering(filter):
             filters_exist = 1
         if key == 'cities':
             if filter[key]:
-                # Ensure city values are strings
-                dict = {"name": 'City', "values": [str(city) for city in filter[key]]}
-                filters.append(dict)
-                filters_exist = 1
+                # Filter out None values and ensure all values are strings
+                valid_cities = [str(city) for city in filter[key] if city is not None]
+                if valid_cities:
+                    dict = {"name": 'City', "values": valid_cities}
+                    filters.append(dict)
+                    filters_exist = 1
         
         if key == 'location':
             if filter[key]:
