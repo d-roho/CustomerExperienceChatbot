@@ -60,12 +60,7 @@ async def get_luminoso_stats(state: State, llm_handler: Anthropic, summaries: bo
             # remove themes for quicker processing
             filter_to_use['subsets'] = []
 
-        # TODO - add support for subsetting by ratings. Removing for now.
-        if 'ratings_min' in filter_to_use['subsets']:
-            filter_to_use['subsets'].remove('ratings_min')
-        if 'ratings_max' in filter_to_use['subsets']:
-            filter_to_use['subsets'].remove('ratings_max')
-
+        
 
         # Run API calls concurrently
         drivers_task = asyncio.create_task(luminoso_stats.fetch_drivers(client, filter_to_use))
@@ -172,7 +167,6 @@ async def get_vector_results(state: State,
             index_name='reviews-csv-main'))
 
         state["vector_results"] = results
-        print(results)
         if reranking == 1:
             reranked_results = vector_store.rerank_results(
                 state['query'], results)
