@@ -172,7 +172,7 @@ def context_generator(context):
 
         context_text = "\n".join(
             [
-                f"Review {idx} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
+                f"Review {idx + 1} (Retriever Score: {c['score']}) \nMetadata: {c['header']} \n - Text: {c['text']}\n\n"
                 if c['header'] not in cumulative_reviews
                 else f"Review {idx + 1} \n {c['text']}"
                 for idx, c in enumerate(value['processed_results'])

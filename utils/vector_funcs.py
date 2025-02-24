@@ -6,6 +6,11 @@ import datetime
 import asyncio
 import itertools
 
+def get_unix_time(month, year, day):
+  dt = datetime.datetime(year, month, day, 0, 0, 0)
+  unix_time = int(dt.timestamp())
+  return unix_time
+
 
 def hierarchy_upholder(filters):
   message = 'Removed lower level subsets: '
@@ -50,11 +55,6 @@ def subset_generator(filters):
     subset_combinations = [()]
   print("Subset combinations:", subset_combinations)
   return subset_combinations, has_date
-
-def get_unix_time(month, year, day):
-  dt = datetime.datetime(year, month, day, 0, 0, 0)
-  unix_time = int(dt.timestamp())
-  return unix_time
 
 
 

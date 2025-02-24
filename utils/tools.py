@@ -119,7 +119,7 @@ class LuminosoStats:
             else:
                 if subset_combinations:
                     print('SUBSETTING')
-                    drivers_dict = await utils.tools_funcs.process_combinations(subset_combinations, filter, filters, filters_exist, client, api_start_time)
+                    drivers_dict = await utils.tools_funcs.process_combinations_themeless(subset_combinations, filter, filters, filters_exist, client, api_start_time)
                 
                 else:
                     
@@ -143,8 +143,12 @@ class LuminosoStats:
             print(f"Total fetch_drivers execution time: {total_time:.2f}s")
             return drivers_dict, total_time
         except Exception as e:
-            raise RuntimeError(f"Failed to Fetch Drivers: {str(e)}")
-
+            print(f"\n\n\n ERROR : Failed to Fetch Drivers: {str(e)}\n\n\n")
+            total_time = time.time() - start_time
+        
+        
+            return {}, total_time
+        
     async def fetch_sentiment(self, client, filter):
         """Fetch sentiment for given filters and concepts asynchronously."""
         try:
@@ -281,4 +285,9 @@ class LuminosoStats:
             print(f"Total fetch_sentiment execution time: {total_time:.2f}s")
             return sentiments_dict, total_time
         except Exception as e:
-            raise RuntimeError(f"Failed to Fetch Sentiment: {str(e)}")
+            print(f"\n\n\n ERROR : Failed to Fetch Drivers: {str(e)}\n\n\n")
+            total_time = time.time() - start_time
+            
+
+            return {}, total_time
+            

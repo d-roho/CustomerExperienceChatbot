@@ -485,11 +485,11 @@ elif selected_tool == "Metadata Filter RAG Search":
 # Query interface
 st.header("Run Agentic RAG \n (Luminoso Stats + Filtered Reviews + Prompting)")
 query = st.text_input("Enter your query")
-lite = st.checkbox("Run Lite version (No Themes or Subsets)", False)
+reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
+concise_mode = st.checkbox("Concise Answer Mode", True) # Added Concise Answer Mode checkbox
 sep_summary = st.checkbox("Generate summaries separately for Drivers and Sentiment",
                              False)
-reviews_summary = st.checkbox("Generate & Use summary for Reviews", True)
-concise_mode = st.checkbox("Concise Answer Mode", False) # Added Concise Answer Mode checkbox
+subset = st.checkbox("Divide by Subsets)", False)
 
 
 if st.button("Run Workflow"):
@@ -498,7 +498,7 @@ if st.button("Run Workflow"):
         start_time = time.time()  #Start timer
         try:
             import asyncio
-            if lite:
+            if not subset:
                 response = asyncio.run(
                     process_query_lite(query,
                                        llm_handler,

@@ -276,6 +276,30 @@ async def process_combinations(subset_combinations, filter, filters,
 
     return drivers_dict
 
+async def process_combinations_themeless(subset_combinations, filter, filters,
+       filters_exist, client, api_start_time):
+    drivers_dict = {}
+    for combo in subset_combinations:
+        current_filters = combo_breaker(combo, filter, filters)
+        print(current_filters)
+        
+        # Fetch driver data
+        result = await fetch_driver(None, current_filters, filters_exist,
+                    client)
+        
+        # Process the result
+        df = pd.DataFrame(result)
+        df = drivers_processing(df, api_start_time)
+        drivers_dict[str(uuid.uuid4())] = {
+        'df': df.to_dict(),
+        'theme': 'All',
+        'subset': copy.deepcopy(current_filters)
+        }
+        print(df)
+        
+    return drivers_dict
+    
+    
 
 def combo_breaker(combo, filter, filters):
     idx = 0
