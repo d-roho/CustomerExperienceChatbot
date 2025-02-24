@@ -51,6 +51,12 @@ def subset_generator(filters):
   print("Subset combinations:", subset_combinations)
   return subset_combinations, has_date
 
+def get_unix_time(month, year, day):
+  dt = datetime.datetime(year, month, day, 0, 0, 0)
+  unix_time = int(dt.timestamp())
+  return unix_time
+
+
 
 async def process_combination(self, query_embedding, top_k, index_name, filters: dict, combo_idx: int, combo: tuple,
                               has_date: bool):
@@ -77,10 +83,6 @@ async def process_combination(self, query_embedding, top_k, index_name, filters:
   if rating_conditions:
     filter_query['rating'] = rating_conditions
 
-  def get_unix_time(month, year):
-    dt = datetime.datetime(year, month, 1, 0, 0, 0)
-    unix_time = int(dt.timestamp())
-    return unix_time
 
   if has_date:
     filter_query['date_year'] = {'$eq': combo[-1]}
@@ -91,17 +93,17 @@ async def process_combination(self, query_embedding, top_k, index_name, filters:
     if filters.get('year_start'):
       if filters.get('month_start'):
         start_unix = get_unix_time(filters['month_start'][0],
-                                   filters['year_start'][0])
+                                   filters['year_start'][0], 1)
       else:
-        start_unix = get_unix_time(1, filters['year_start'][0])
+        start_unix = get_unix_time(1, filters['year_start'][0], 1)
       date_conditions['$gte'] = start_unix
 
     if filters.get('year_end'):
       if filters.get('month_end'):
         end_unix = get_unix_time(filters['month_end'][0],
-                                 filters['year_end'][0])
+                                 filters['year_end'][0],28)
       else:
-        end_unix = get_unix_time(12, filters['year_end'][0])
+        end_unix = get_unix_time(12, filters['year_end'][0], 28)
       date_conditions['$lte'] = end_unix
 
     if date_conditions:
